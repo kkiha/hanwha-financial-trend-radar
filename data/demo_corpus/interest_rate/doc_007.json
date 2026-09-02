@@ -1,0 +1,11 @@
+{
+  "document_id": "IR_DEMO_007",
+  "title": "금리 하락 국면의 증권업 전송 경로",
+  "source": "Prototype Research Snapshot",
+  "published_at": "2026-08-28",
+  "url": "demo://interest_rate/IR_DEMO_007",
+  "category": "interest_rate",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "실제 회사 분석이 아닌 시연용 합성 문서입니다.",
+  "content": "금리 하락은 채권 평가와 거래 환경에 영향을 줄 수 있고, 위험선호 변화에 따라 브로커리지와 기업금융에는 상반된 신호가 전달될 수 있다는 데모 가정이다. 영향의 크기와 방향은 포지션 및 시장 상황에 따라 달라지므로 일률적인 긍정 판단을 하지 않는다."
+}

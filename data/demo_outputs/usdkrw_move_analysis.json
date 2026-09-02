@@ -1,0 +1,35 @@
+{
+  "signal": {
+    "metric": "USD/KRW",
+    "category": "fx",
+    "direction": "up",
+    "weekly_change": 32.4,
+    "z_score": 2.1
+  },
+  "trend_summary": "시연용 Snapshot에서는 예상 금리차 변화, 위험회피에 따른 달러 선호, 국경 간 자금 흐름이 USD/KRW 급등과 원화 약세를 설명한다. 이는 실시간 환율 분석이 아닌 합성 Prototype 시나리오다.",
+  "causes": [
+    "한미 예상 금리 경로 차이 확대 가정",
+    "글로벌 위험회피와 미국 달러 선호",
+    "국경 간 자금 흐름 변화와 원화 변동성 확대"
+  ],
+  "companies": {
+    "한화생명": {
+      "relevance": "HIGH",
+      "direction": "MIXED",
+      "transmission_paths": ["해외자산 평가", "환헤지", "외화 익스포저"],
+      "insight": "해외자산 평가 변화와 환헤지 조건, 외화 익스포저가 서로 다른 방향으로 작용할 수 있다. 실제 규모나 헤지 비율은 검증되지 않았다."
+    },
+    "한화투자증권": {
+      "relevance": "HIGH",
+      "direction": "MIXED",
+      "transmission_paths": ["해외주식", "Trading", "시장 변동성"],
+      "insight": "해외주식 참여 환경과 Trading 활동이 변할 수 있지만 시장 변동성 확대가 동시에 부담이 될 수 있다. 실제 수익 영향은 추정하지 않는다."
+    },
+    "한화자산운용": {
+      "relevance": "HIGH",
+      "direction": "MIXED",
+      "transmission_paths": ["해외자산 평가", "환헤지", "자금 흐름"],
+      "insight": "해외자산 평가 효과와 환헤지 조건, 투자자 자금 흐름을 함께 살펴야 한다. 특정 펀드나 운용성과에 대한 판단은 포함하지 않는다."
+    }
+  }
+}

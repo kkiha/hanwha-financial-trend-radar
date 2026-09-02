@@ -1,0 +1,11 @@
+{
+  "document_id": "FX_DEMO_005",
+  "title": "증권업의 해외주식·Trading과 환율 변동",
+  "source": "Prototype Research Snapshot",
+  "published_at": "2026-08-28",
+  "url": "demo://fx/FX_DEMO_005",
+  "category": "fx",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "실제 회사 분석이 아닌 시연용 합성 문서입니다.",
+  "content": "USD/KRW 변동은 해외주식 참여 환경, Trading 활동, 시장 변동성 경로와 연결될 수 있다. 거래활동 증가 가능성과 위험심리 위축 가능성이 함께 있어 방향은 MIXED로 다루며 실제 수익 영향은 추정하지 않는다."
+}

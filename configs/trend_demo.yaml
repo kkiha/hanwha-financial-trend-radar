@@ -1,0 +1,23 @@
+{
+  "paths": {
+    "demo_corpus_dir": "data/demo_corpus",
+    "demo_index_path": "indexes/demo_trends/index.json",
+    "sample_signals_dir": "data/sample_signals",
+    "demo_evidence_dir": "data/demo_evidence",
+    "demo_outputs_dir": "data/demo_outputs",
+    "profiles_dir": "profiles",
+    "trend_keywords_dir": "trend_keywords"
+  },
+  "retrieval": {
+    "topk": 5,
+    "rrf_k_const": 60,
+    "bm25_k1": 1.5,
+    "bm25_b": 0.75
+  },
+  "llm": {
+    "provider": "groq",
+    "model": "llama-3.3-70b-versatile",
+    "temperature": 0.1,
+    "max_tokens": 1400
+  }
+}

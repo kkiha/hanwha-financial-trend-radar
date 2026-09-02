@@ -1,0 +1,11 @@
+{
+  "document_id": "IR_DEMO_005",
+  "title": "불확실성 확대와 안전자산 선호의 금리 전송 경로",
+  "source": "Prototype Research Snapshot",
+  "published_at": "2026-08-28",
+  "url": "demo://interest_rate/IR_DEMO_005",
+  "category": "interest_rate",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "실제 기사가 아닌 시연용 합성 문서입니다.",
+  "content": "위험자산 변동성이 확대되면서 안전자산 선호가 강해졌다는 Prototype 가정이다. 미국 국채 매수 수요가 늘면 채권 가격은 상승하고 장기금리는 하락할 수 있다. 다만 변동성 원인과 지속기간을 특정할 근거는 없으므로 보조 설명으로만 사용해야 한다."
+}

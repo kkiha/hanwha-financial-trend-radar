@@ -1,0 +1,16 @@
+{
+  "signal_id": "USDKRW_MOVE",
+  "metric": "USD/KRW",
+  "category": "fx",
+  "current": 1398.5,
+  "weekly_change": 32.4,
+  "weekly_change_unit": "krw_per_usd",
+  "z_score": 2.1,
+  "direction": "up",
+  "headline": "USD/KRW 급등과 원화 약세",
+  "observed_at": "2026-08-28",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "시연용으로 고정한 가상 Snapshot이며 실시간 환율 데이터가 아닙니다.",
+  "evidence_snapshot": "data/demo_evidence/usdkrw_move_evidence.json",
+  "cached_output": "data/demo_outputs/usdkrw_move_analysis.json"
+}

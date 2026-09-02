@@ -1,0 +1,35 @@
+{
+  "signal": {
+    "metric": "CBOE Volatility Index (VIX)",
+    "category": "volatility",
+    "direction": "up",
+    "weekly_change": 10.8,
+    "z_score": 2.6
+  },
+  "trend_summary": "시연용 Snapshot에서는 정책 불확실성, 주식시장 조정과 옵션 헤지 수요가 VIX 급등과 Risk-off 확산을 설명한다. 이는 실시간 시장 분석이 아닌 합성 Prototype 시나리오다.",
+  "causes": [
+    "정책 경로 불확실성 확대 가정",
+    "주식시장 조정과 옵션 헤지 수요 증가",
+    "위험회피 심리 확산과 유동성 변화"
+  ],
+  "companies": {
+    "한화생명": {
+      "relevance": "HIGH",
+      "direction": "NEGATIVE",
+      "transmission_paths": ["투자자산 변동성", "자본관리", "리스크 관리"],
+      "insight": "투자자산 변동 확대가 자본관리와 리스크 관리 부담으로 전달될 수 있다. 실제 민감도와 수치는 검증되지 않았으며 TODO_VERIFY 범위를 넘지 않는다."
+    },
+    "한화투자증권": {
+      "relevance": "HIGH",
+      "direction": "MIXED",
+      "transmission_paths": ["거래대금", "Trading", "위험자산 심리"],
+      "insight": "단기 거래대금과 Trading 활동 변화 가능성은 있지만 위험자산 심리 위축이 함께 작용할 수 있다. 실제 수익 영향은 추정하지 않는다."
+    },
+    "한화자산운용": {
+      "relevance": "HIGH",
+      "direction": "MIXED",
+      "transmission_paths": ["Fund Flow", "Risk-off", "Asset Allocation"],
+      "insight": "Risk-off에 따른 Fund Flow 변화와 Asset Allocation 재조정 가능성을 함께 봐야 한다. 특정 상품이나 성과에 대한 판단은 포함하지 않는다."
+    }
+  }
+}

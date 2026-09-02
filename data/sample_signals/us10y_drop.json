@@ -1,0 +1,16 @@
+{
+  "signal_id": "US10Y_SAMPLE",
+  "metric": "US Treasury 10Y",
+  "category": "interest_rate",
+  "current": 3.89,
+  "weekly_change": -0.23,
+  "weekly_change_unit": "percentage_point",
+  "z_score": -2.2,
+  "direction": "down",
+  "headline": "미국 장기금리 급락",
+  "observed_at": "2026-08-28",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "시연용으로 고정한 가상 Snapshot이며 실시간 시장 데이터가 아닙니다.",
+  "evidence_snapshot": "data/demo_evidence/us10y_sample_evidence.json",
+  "cached_output": "data/demo_outputs/us10y_sample_analysis.json"
+}

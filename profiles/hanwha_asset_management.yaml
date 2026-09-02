@@ -1,0 +1,25 @@
+{
+  "company": "한화자산운용",
+  "business_type": "자산운용",
+  "profile_notice": "Prototype용 최소 Profile이며 외부 공개자료 검증 전에는 사실 확장을 금지합니다.",
+  "market_exposures": {
+    "interest_rate": {
+      "relevance": "high",
+      "direction": "mixed",
+      "transmission_paths": ["채권 가격", "듀레이션", "자산배분"],
+      "source_status": "TODO_VERIFY"
+    },
+    "volatility": {
+      "relevance": "high",
+      "direction": "mixed",
+      "transmission_paths": ["Fund Flow", "Risk-off", "Asset Allocation"],
+      "source_status": "TODO_VERIFY"
+    },
+    "fx": {
+      "relevance": "high",
+      "direction": "mixed",
+      "transmission_paths": ["해외자산 평가", "환헤지", "자금 흐름"],
+      "source_status": "TODO_VERIFY"
+    }
+  }
+}

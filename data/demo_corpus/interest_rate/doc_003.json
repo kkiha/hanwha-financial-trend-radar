@@ -1,0 +1,11 @@
+{
+  "document_id": "IR_DEMO_003",
+  "title": "완화적으로 해석된 FOMC 메시지와 Treasury yield",
+  "source": "Prototype Research Snapshot",
+  "published_at": "2026-08-27",
+  "url": "demo://interest_rate/IR_DEMO_003",
+  "category": "interest_rate",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "실제 기사가 아닌 시연용 합성 문서입니다.",
+  "content": "가상의 FOMC 커뮤니케이션이 향후 정책에서 물가와 고용의 균형을 강조한 것으로 설정했다. 시장이 이를 완화적 메시지로 해석하면 예상 정책금리 경로가 낮아지고 Treasury yield 전반에 하락 압력이 나타날 수 있다. 실제 연준 발언이나 회의 결과를 재현한 자료는 아니며 Trend Retrieval 데모 전용 문서다."
+}

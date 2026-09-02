@@ -1,0 +1,11 @@
+{
+  "document_id": "IR_DEMO_001",
+  "title": "물가 압력 완화 가정과 미국 장기금리 하락",
+  "source": "Prototype Research Snapshot",
+  "published_at": "2026-08-25",
+  "url": "demo://interest_rate/IR_DEMO_001",
+  "category": "interest_rate",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "실제 기사가 아닌 시연용 합성 문서입니다.",
+  "content": "프로토타입 시나리오는 미국 CPI 흐름이 시장 예상보다 완만해졌다는 가정을 둔다. 물가 둔화 기대가 커지면 연준의 긴축 지속 필요성이 낮아질 수 있다는 해석이 형성되고, 미국 국채 10년물과 장기금리에 하락 압력으로 전달될 수 있다. 이 문서는 인과관계 검색을 시험하기 위한 합성 자료이며 공식 통계를 인용하지 않는다."
+}

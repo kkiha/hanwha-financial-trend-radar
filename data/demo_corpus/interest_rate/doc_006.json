@@ -1,0 +1,11 @@
+{
+  "document_id": "IR_DEMO_006",
+  "title": "장기금리 하락과 보험사 ALM의 복합 영향",
+  "source": "Prototype Research Snapshot",
+  "published_at": "2026-08-28",
+  "url": "demo://interest_rate/IR_DEMO_006",
+  "category": "interest_rate",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "실제 회사 분석이 아닌 시연용 합성 문서입니다.",
+  "content": "장기금리 하락은 보유 채권 가격 측면과 신규 재투자수익률 측면에서 서로 다른 방향의 영향을 줄 수 있다는 일반적 전송 구조를 모사한다. 생명보험사의 ALM 영향은 자산과 부채의 듀레이션 구성에 따라 달라질 수 있다. 특정 회사의 실제 포트폴리오나 KPI를 가정하지 않는다."
+}

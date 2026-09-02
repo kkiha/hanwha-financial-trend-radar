@@ -1,0 +1,25 @@
+{
+  "company": "한화투자증권",
+  "business_type": "증권",
+  "profile_notice": "Prototype용 최소 Profile이며 외부 공개자료 검증 전에는 사실 확장을 금지합니다.",
+  "market_exposures": {
+    "interest_rate": {
+      "relevance": "high",
+      "direction": "mixed",
+      "transmission_paths": ["채권 평가", "브로커리지", "기업금융"],
+      "source_status": "TODO_VERIFY"
+    },
+    "volatility": {
+      "relevance": "high",
+      "direction": "mixed",
+      "transmission_paths": ["거래대금", "Trading", "위험자산 심리"],
+      "source_status": "TODO_VERIFY"
+    },
+    "fx": {
+      "relevance": "high",
+      "direction": "mixed",
+      "transmission_paths": ["해외주식", "Trading", "시장 변동성"],
+      "source_status": "TODO_VERIFY"
+    }
+  }
+}

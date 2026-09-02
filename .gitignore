@@ -10,6 +10,18 @@ data/
 *.parquet
 *.feather
 
+# Prototype snapshot inputs are intentionally versioned.
+!data/
+data/*
+!data/demo_corpus/
+!data/demo_corpus/**
+!data/sample_signals/
+!data/sample_signals/**
+!data/demo_evidence/
+!data/demo_evidence/**
+!data/demo_outputs/
+!data/demo_outputs/**
+
 # Jupyter/IDE
 .ipynb_checkpoints/
 .vscode/

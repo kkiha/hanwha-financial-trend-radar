@@ -1,0 +1,11 @@
+{
+  "document_id": "VOL_DEMO_001",
+  "title": "정책 불확실성 확대와 VIX 급등 시나리오",
+  "source": "Prototype Research Snapshot",
+  "published_at": "2026-08-25",
+  "url": "demo://volatility/VOL_DEMO_001",
+  "category": "volatility",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "실제 기사가 아닌 시연용 합성 문서입니다.",
+  "content": "정책 경로에 대한 불확실성이 커지며 옵션시장의 헤지 수요가 증가했다는 가상 상황이다. 옵션 가격에 반영되는 기대 변동성이 높아지면 VIX와 변동성 지수가 단기간 급등하고 위험회피 심리가 확산될 수 있다. 실제 정책 발표나 시장 수치를 인용하지 않는다."
+}

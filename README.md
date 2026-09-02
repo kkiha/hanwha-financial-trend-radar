@@ -4,6 +4,33 @@
 
 핵심 아이디어는 Retrieval-Augmented Generation(RAG)을 중심으로, (1) 원문 데이터 정제와 임베딩 인덱스 구축, (2) 기업 메타데이터와 키워드에 기반한 하이브리드 검색, (3) Groq LLM과 Few-shot 프롬프트(필요시)를 이용한 한국어 리포트 생성으로 이어지는 전체 자동화 흐름을 제공하는 것입니다. 아래 설명에는 프로젝트에서 채택한 아키텍처와 사용 방법을 정리해 두었습니다.
 
+## Trend Radar Prototype (Snapshot Mode)
+
+Trend Radar Prototype은 실시간 수집 대신 저장소에 포함된 명시적
+`demo_snapshot` 입력을 사용합니다. 기존 기업 검색용 `indexes/all`과
+`retrieve_with_keywords()`는 유지되며, Trend 검색은 별도
+`indexes/demo_trends/index.json`에서 회사 필터 없이 실행됩니다.
+
+```powershell
+python -m scripts.build_demo_index --config configs/trend_demo.yaml
+$env:DEMO_MODE="true"
+python -m scripts.run_trend_sample --signal data/sample_signals/us10y_drop.json
+streamlit run app/streamlit_app.py
+```
+
+`DEMO_MODE=true`는 실제로 Snapshot corpus를 검색하고 검증된 cached LLM JSON을
+사용하므로 API key나 네트워크가 필요하지 않습니다. `DEMO_MODE=false`에서는
+같은 Retrieval 결과와 Profile을 Groq structured-analysis prompt에 전달하며
+`GROQ_API_KEY`가 필요합니다. 현재 자료는 시연용 합성 Snapshot이고 투자정보나
+실시간 시장 데이터가 아닙니다.
+
+Day 3 Demo catalog에는 `US10Y_SAMPLE`, `VIX_SPIKE`, `USDKRW_MOVE`가 포함됩니다.
+시연 전 전체 artifact와 Profile grounding을 한 번에 검증할 수 있습니다.
+
+```powershell
+python -m scripts.validate_demo_artifacts
+```
+
 > 참고: 용량 이슈로 인해 `data/` 원문 텍스트는 Git 저장소에 포함되지 않습니다. 레포지토리를 클론한 뒤 직접 데이터를 배치해야 하며, 아래 “데이터 배치” 절차를 따르세요.
 
 -------------------------------------------------------------------------------

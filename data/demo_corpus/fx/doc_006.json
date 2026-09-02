@@ -1,0 +1,11 @@
+{
+  "document_id": "FX_DEMO_006",
+  "title": "자산운용 해외자산 평가와 자금 흐름",
+  "source": "Prototype Research Snapshot",
+  "published_at": "2026-08-28",
+  "url": "demo://fx/FX_DEMO_006",
+  "category": "fx",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "실제 회사 분석이 아닌 시연용 합성 문서입니다.",
+  "content": "원화 약세는 해외자산 평가와 환헤지 조건, 투자자의 자금 흐름에 서로 다른 영향을 줄 수 있다. 특정 펀드나 운용전략을 전제하지 않으며 자산운용 Profile에 정의된 세 경로만 비교한다."
+}

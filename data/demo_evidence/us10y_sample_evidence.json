@@ -1,0 +1,47 @@
+{
+  "signal_id": "US10Y_SAMPLE",
+  "data_mode": "demo_snapshot",
+  "snapshot_notice": "검색 결과 표시를 안정화하기 위한 시연용 Evidence metadata입니다.",
+  "evidence": [
+    {
+      "document_id": "IR_DEMO_001",
+      "title": "물가 압력 완화 가정과 미국 장기금리 하락",
+      "source": "Prototype Research Snapshot",
+      "date": "2026-08-25",
+      "url": "demo://interest_rate/IR_DEMO_001",
+      "excerpt": "물가 둔화 기대가 커지면 연준의 긴축 지속 필요성이 낮아질 수 있다는 Prototype 전송 경로다."
+    },
+    {
+      "document_id": "IR_DEMO_002",
+      "title": "고용 모멘텀 둔화 가정이 금리 인하 기대에 미치는 영향",
+      "source": "Prototype Research Snapshot",
+      "date": "2026-08-26",
+      "url": "demo://interest_rate/IR_DEMO_002",
+      "excerpt": "고용 둔화가 금리 인하 기대를 앞당기고 미국 국채 10년물 금리에 하락 압력을 줄 수 있다는 가상 시나리오다."
+    },
+    {
+      "document_id": "IR_DEMO_003",
+      "title": "완화적으로 해석된 FOMC 메시지와 Treasury yield",
+      "source": "Prototype Research Snapshot",
+      "date": "2026-08-27",
+      "url": "demo://interest_rate/IR_DEMO_003",
+      "excerpt": "가상의 완화적 FOMC 해석이 예상 정책금리 경로와 Treasury yield를 낮추는 흐름을 모사한다."
+    },
+    {
+      "document_id": "IR_DEMO_004",
+      "title": "국채 입찰 수요 개선 시나리오와 10년물 금리",
+      "source": "Prototype Research Snapshot",
+      "date": "2026-08-27",
+      "url": "demo://interest_rate/IR_DEMO_004",
+      "excerpt": "장기 투자자의 국채 수요 확대가 채권 가격 상승과 10년물 수익률 하락으로 연결되는 보조 시나리오다."
+    },
+    {
+      "document_id": "IR_DEMO_005",
+      "title": "불확실성 확대와 안전자산 선호의 금리 전송 경로",
+      "source": "Prototype Research Snapshot",
+      "date": "2026-08-28",
+      "url": "demo://interest_rate/IR_DEMO_005",
+      "excerpt": "안전자산 선호에 따른 미국 국채 매수 수요가 장기금리 하락의 보조 요인이 되는 가정이다."
+    }
+  ]
+}
