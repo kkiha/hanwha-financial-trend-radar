@@ -1,14 +1,99 @@
-# Hanwha Financial Trend Radar
+# Hanwha Global Finance Radar
+
+글로벌 금융 흐름을 압축하는 AI 트렌드 브리핑
+
+최근 7일 동안의 글로벌·국내 금융뉴스를 자동으로 수집하고, AI가 유사 기사를 주요 트렌드로
+군집화한 뒤, 이번 주 주목할 변화 3건과 관련 근거를 보여주는 Prototype입니다.
+
+```
+최근 7일 RSS 수집 → 기사 정규화·중복 제거 → Groq 주제 군집화
+→ 트렌드별 기사 연결 → 기사 수·출처 수·최근 집중도 계산 → 주요 트렌드 3건
+```
+
+핵심 가치는 깊은 투자분석이나 계열사 손익 예측이 아닙니다. **수십 건의 금융정보를 사람이
+일일이 읽기 전에, AI가 이번 주 부상한 주제와 관련 근거를 압축해 보여주는 것**입니다.
+
+## 실행
+
+```powershell
+# 메인 앱 — Global Finance Radar
+streamlit run app/trend_feed_app.py
+
+# 최신 데이터 수집 + 트렌드 재생성 (GROQ_API_KEY 필요)
+python -m scripts.refresh_trend_feed
+
+# 수집만 (API key 없이 동작 확인)
+python -m scripts.refresh_trend_feed --skip-llm
+
+# 테스트
+python -m unittest discover -s tests -t .
+```
+
+앱 안의 `최신 데이터 불러오기` 버튼도 같은 수집·분석을 수행합니다.
+브라우저는 자동으로 열리지 않습니다 — http://localhost:8501 을 직접 여세요.
+
+## 상태 배지
+
+| 배지 | 의미 |
+|---|---|
+| `LIVE` | 24시간 이내에 수집·분석한 결과 |
+| `CACHED` | 그보다 오래된 직전 분석 결과 |
+| `DEMO` | 저장소에 포함된 합성 예시 (`data/demo_outputs/trend_feed_fallback.json`) |
+
+`GROQ_API_KEY`가 없으면 RSS 수집까지만 수행하고 기존 결과를 유지합니다. 네트워크·RSS·Groq
+오류가 나도 앱이 죽지 않고 직전 결과를 그대로 보여줍니다.
+
+## 현재 구현
+
+- 최근 7일 글로벌·국내 RSS 수집 (금리·물가·유동성 / 시장위험·자금 흐름 / 금융규제·디지털금융)
+- URL·유사 제목 기반 중복 제거
+- Groq 기반 트렌드 군집화 (정확히 3건, 기사 ID 검증, 업무 태그 whitelist)
+- 기사 수·고유 출처 수·최근 48시간 집중도·일별 기사량을 **코드에서 계산**
+- Trend Feed UI (Hero + 2·3위 카드 + Trend Detail + Methodology)
+- Live / Cached / Demo fallback
+
+## 구현하지 않은 것
+
+- 기사 본문 전체 크롤링 — RSS가 주는 제목·출처·발행시각·URL·짧은 설명까지만 사용합니다
+- 범용 웹 크롤러
+- 계열사 손익 영향 분석
+- 투자 추천
+- 완전한 실시간 스트리밍
+- 미래 사건 예측
+- 생산환경용 데이터 거버넌스
+
+## AI가 하는 일과 하지 않는 일
+
+LLM은 기사를 3개 주제로 묶고 한국어 요약 문장을 씁니다. **화면의 모든 숫자는 코드에서
+계산합니다** — 기사 수, 출처 수, 48시간 집중도, 일별 차트, 우선순위 모두. "전주 대비 N%
+증가"처럼 과거 데이터 없이 검증할 수 없는 수치는 표시하지 않습니다.
+
+우선순위 = `0.5 × 기사 수 비중 + 0.3 × 출처 수 비중 + 0.2 × 최근 48시간 비중`.
+기사 수만으로 정렬하면 한 통신사의 재배포가 순위를 지배합니다.
+
+관련 업무는 장문 분석이 아니라 정해진 목록 안의 짧은 태그로만 표시하며, 목록 밖의 태그는
+제거합니다.
+
+---
+
+# Legacy — Hanwha Financial Trend Radar (Signal Radar)
+
+아래는 이전 단계의 Signal Radar Prototype입니다. **삭제하지 않고 보존**되며 독립적으로
+실행할 수 있습니다.
+
+```powershell
+streamlit run app/streamlit_app.py
+```
 
 금융시장 Signal과 관련 Evidence를 연결하고, 보험·증권·자산운용 관점에서 추가 확인할
-Check Point를 제공하는 Trend Intelligence Prototype
+Check Point를 제공합니다.
 
 > **PROTOTYPE · SNAPSHOT MODE** — 이 Prototype은 분석 Workflow와 UX 검증을 위해
 > Representative Snapshot Dataset을 사용합니다. 실시간 시장 데이터나 투자정보가 아닙니다.
 
 ---
 
-## Project Goal
+## Project Goal (legacy)
 
 이례적인 금융 Signal을 포착하고, 관련 Evidence를 검색·요약한 뒤,
 **보험 / 증권 / 자산운용 관점에서 추가로 확인할 항목**을 제시합니다.
@@ -134,7 +219,7 @@ python -m scripts.build_demo_index --config configs/trend_demo.yaml
 $env:DEMO_MODE="true"
 python -m scripts.run_trend_sample --signal data/sample_signals/us10y_drop.json
 
-# 3. Dashboard
+# 3. Legacy Signal Radar dashboard
 streamlit run app/streamlit_app.py
 
 # 4. 3개 Signal 전체 artifact + Profile grounding 검증

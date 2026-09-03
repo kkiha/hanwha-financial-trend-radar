@@ -1,0 +1,227 @@
+{
+  "generated_at": "2026-09-03T09:00:00+00:00",
+  "window_days": 7,
+  "model": "demo-fallback",
+  "is_synthetic": true,
+  "notice": "합성 예시 데이터입니다. 실제 기사·언론사·URL이 아니며, 화면 구성과 분석 흐름을 확인하기 위한 대표 결과입니다.",
+  "trends": [
+    {
+      "trend_id": "trend_01",
+      "title_ko": "주요국 금리 경로 재평가와 장기물 수요 변화",
+      "summary_ko": "물가 둔화 신호와 중앙은행 발언이 엇갈리면서 정책금리 경로에 대한 시장 해석이 갈렸고, 장기 국채 수요와 커브 형태에 대한 논의가 함께 늘었습니다.",
+      "why_it_matters_ko": "금리 경로 해석이 갈리는 구간에서는 채권 운용 환경과 자금조달 비용이 동시에 움직입니다. 방향을 단정하기보다 커브와 수요 지표를 함께 확인할 시점입니다.",
+      "watch_next": [
+        "중앙은행 회의록과 위원 발언의 톤 변화",
+        "장기 국채 입찰 수요와 커브 기울기"
+      ],
+      "article_ids": ["D001", "D002", "D003", "D004", "D005", "D006", "D007"],
+      "related_business_tags": ["보험 자산운용", "자산운용 포트폴리오", "증권 리서치"]
+    },
+    {
+      "trend_id": "trend_02",
+      "title_ko": "위험자산 변동성 확대와 국경 간 자금 이동",
+      "summary_ko": "주식·크레딧 시장의 변동성이 커지면서 안전자산 선호와 신흥국 자금 이동이 함께 언급됐고, 환율 변동성에 대한 보도도 늘었습니다.",
+      "why_it_matters_ko": "변동성과 자금 흐름이 함께 움직이는 국면에서는 포트폴리오 리스크 지표와 유동성 상황을 같은 화면에서 볼 필요가 있습니다.",
+      "watch_next": [
+        "크레딧 스프레드와 변동성 지수의 동반 움직임",
+        "신흥국 펀드 자금 유출입 방향"
+      ],
+      "article_ids": ["D008", "D009", "D010", "D011", "D012", "D013"],
+      "related_business_tags": ["증권 리스크관리", "보험 리스크관리"]
+    },
+    {
+      "trend_id": "trend_03",
+      "title_ko": "디지털자산 규제 정비와 금융권 AI 활용 논의",
+      "summary_ko": "스테이블코인·토큰증권 관련 제도 정비 논의가 이어지는 가운데, 금융회사의 AI 활용 범위와 감독 기준에 대한 보도가 함께 늘었습니다.",
+      "why_it_matters_ko": "규제 윤곽이 잡히는 단계에서는 상품 설계와 내부통제 요건이 함께 바뀝니다. 제도 문안과 감독 가이드라인의 진행 단계를 확인할 시점입니다.",
+      "watch_next": [
+        "스테이블코인·토큰증권 관련 법제화 진행 단계",
+        "금융 AI 활용에 대한 감독 가이드라인 범위"
+      ],
+      "article_ids": ["D014", "D015", "D016", "D017", "D018"],
+      "related_business_tags": ["디지털금융", "증권 디지털사업", "전사 전략"]
+    }
+  ],
+  "articles": [
+    {
+      "article_id": "D001",
+      "title": "[합성 예시] 물가 둔화 신호에 정책금리 경로 해석이 갈렸다는 보도",
+      "source": "합성 출처 A",
+      "hours_ago": 5,
+      "url": "",
+      "summary": "합성 예시입니다. 물가 지표 둔화 이후 정책금리 인하 시점에 대한 시장 해석이 엇갈린다는 내용의 대표 기사 요약입니다.",
+      "language": "ko",
+      "watch_area": "rates_liquidity"
+    },
+    {
+      "article_id": "D002",
+      "title": "[Synthetic sample] Long-end demand in focus as yield curve debate widens",
+      "source": "합성 출처 B",
+      "hours_ago": 11,
+      "url": "",
+      "summary": "Synthetic sample summary describing renewed attention on long-dated government bond demand and curve shape.",
+      "language": "en",
+      "watch_area": "rates_liquidity"
+    },
+    {
+      "article_id": "D003",
+      "title": "[Synthetic sample] Central bank commentary leaves rate path open",
+      "source": "합성 출처 C",
+      "hours_ago": 21,
+      "url": "",
+      "summary": "Synthetic sample summary noting that policymaker remarks kept several rate scenarios on the table.",
+      "language": "en",
+      "watch_area": "rates_liquidity"
+    },
+    {
+      "article_id": "D004",
+      "title": "[합성 예시] 국채 입찰 수요와 커브 기울기에 대한 시장 논의",
+      "source": "합성 출처 D",
+      "hours_ago": 34,
+      "url": "",
+      "summary": "합성 예시입니다. 장기 국채 입찰 결과와 커브 기울기 변화를 함께 언급한 대표 기사 요약입니다.",
+      "language": "ko",
+      "watch_area": "rates_liquidity"
+    },
+    {
+      "article_id": "D005",
+      "title": "[Synthetic sample] Inflation prints keep policy timing uncertain",
+      "source": "합성 출처 A",
+      "hours_ago": 58,
+      "url": "",
+      "summary": "Synthetic sample summary on mixed inflation readings and their effect on expected policy timing.",
+      "language": "en",
+      "watch_area": "rates_liquidity"
+    },
+    {
+      "article_id": "D006",
+      "title": "[합성 예시] 조달 비용 변화에 대한 금융권 점검 보도",
+      "source": "합성 출처 E",
+      "hours_ago": 79,
+      "url": "",
+      "summary": "합성 예시입니다. 금리 경로 변화가 조달 비용 점검으로 이어진다는 내용의 대표 기사 요약입니다.",
+      "language": "ko",
+      "watch_area": "rates_liquidity"
+    },
+    {
+      "article_id": "D007",
+      "title": "[Synthetic sample] Liquidity conditions steady but watched closely",
+      "source": "합성 출처 B",
+      "hours_ago": 121,
+      "url": "",
+      "summary": "Synthetic sample summary describing stable but closely monitored funding conditions.",
+      "language": "en",
+      "watch_area": "rates_liquidity"
+    },
+    {
+      "article_id": "D008",
+      "title": "[Synthetic sample] Equity and credit volatility rise together",
+      "source": "합성 출처 F",
+      "hours_ago": 8,
+      "url": "",
+      "summary": "Synthetic sample summary noting a simultaneous pickup in equity and credit market volatility.",
+      "language": "en",
+      "watch_area": "risk_flows"
+    },
+    {
+      "article_id": "D009",
+      "title": "[합성 예시] 안전자산 선호와 신흥국 자금 이동 보도",
+      "source": "합성 출처 D",
+      "hours_ago": 16,
+      "url": "",
+      "summary": "합성 예시입니다. 위험회피 심리 확대와 신흥국 펀드 자금 이동을 함께 다룬 대표 기사 요약입니다.",
+      "language": "ko",
+      "watch_area": "risk_flows"
+    },
+    {
+      "article_id": "D010",
+      "title": "[Synthetic sample] Cross-border flows shift as risk appetite cools",
+      "source": "합성 출처 G",
+      "hours_ago": 30,
+      "url": "",
+      "summary": "Synthetic sample summary on changing cross-border allocation as risk appetite softens.",
+      "language": "en",
+      "watch_area": "risk_flows"
+    },
+    {
+      "article_id": "D011",
+      "title": "[합성 예시] 환율 변동성 확대에 대한 시장 점검",
+      "source": "합성 출처 E",
+      "hours_ago": 52,
+      "url": "",
+      "summary": "합성 예시입니다. 환율 변동성이 커지면서 헤지 수요가 함께 언급된 대표 기사 요약입니다.",
+      "language": "ko",
+      "watch_area": "risk_flows"
+    },
+    {
+      "article_id": "D012",
+      "title": "[Synthetic sample] Credit spreads widen modestly across sectors",
+      "source": "합성 출처 F",
+      "hours_ago": 90,
+      "url": "",
+      "summary": "Synthetic sample summary describing a modest, broad widening in credit spreads.",
+      "language": "en",
+      "watch_area": "risk_flows"
+    },
+    {
+      "article_id": "D013",
+      "title": "[합성 예시] 포트폴리오 리스크 지표 점검 필요성 보도",
+      "source": "합성 출처 H",
+      "hours_ago": 140,
+      "url": "",
+      "summary": "합성 예시입니다. 변동성 국면에서 리스크 지표 점검 필요성을 다룬 대표 기사 요약입니다.",
+      "language": "ko",
+      "watch_area": "risk_flows"
+    },
+    {
+      "article_id": "D014",
+      "title": "[합성 예시] 스테이블코인 제도 정비 논의 진행 보도",
+      "source": "합성 출처 I",
+      "hours_ago": 13,
+      "url": "",
+      "summary": "합성 예시입니다. 스테이블코인 발행과 준비자산 관리에 대한 제도 논의를 다룬 대표 기사 요약입니다.",
+      "language": "ko",
+      "watch_area": "regulation_innovation"
+    },
+    {
+      "article_id": "D015",
+      "title": "[Synthetic sample] Tokenization pilots draw supervisory attention",
+      "source": "합성 출처 J",
+      "hours_ago": 27,
+      "url": "",
+      "summary": "Synthetic sample summary on supervisory interest in tokenized securities pilots.",
+      "language": "en",
+      "watch_area": "regulation_innovation"
+    },
+    {
+      "article_id": "D016",
+      "title": "[합성 예시] 금융권 AI 활용 범위와 내부통제 논의",
+      "source": "합성 출처 I",
+      "hours_ago": 46,
+      "url": "",
+      "summary": "합성 예시입니다. 금융회사의 AI 활용 확대와 내부통제 요건을 함께 다룬 대표 기사 요약입니다.",
+      "language": "ko",
+      "watch_area": "regulation_innovation"
+    },
+    {
+      "article_id": "D017",
+      "title": "[Synthetic sample] Supervisors outline expectations for financial AI",
+      "source": "합성 출처 K",
+      "hours_ago": 88,
+      "url": "",
+      "summary": "Synthetic sample summary describing supervisory expectations for AI use in financial firms.",
+      "language": "en",
+      "watch_area": "regulation_innovation"
+    },
+    {
+      "article_id": "D018",
+      "title": "[합성 예시] 토큰증권 관련 상품 설계 요건 점검 보도",
+      "source": "합성 출처 L",
+      "hours_ago": 130,
+      "url": "",
+      "summary": "합성 예시입니다. 토큰증권 제도화 단계에서 상품 설계 요건을 점검한다는 대표 기사 요약입니다.",
+      "language": "ko",
+      "watch_area": "regulation_innovation"
+    }
+  ]
+}

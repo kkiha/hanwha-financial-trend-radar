@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Sample finance search feed</title>
+    <item>
+      <title>Central bank keeps rate path open - Example Wire</title>
+      <link>https://example.com/news/rate-path?utm_source=rss&amp;utm_medium=feed</link>
+      <pubDate>Wed, 02 Sep 2026 09:30:00 GMT</pubDate>
+      <description>&lt;p&gt;Policymakers left several scenarios on the table, according to the statement.&lt;/p&gt;</description>
+      <source url="https://example.com">Example Wire</source>
+    </item>
+    <item>
+      <title>Central bank keeps rate path open — Another Outlet</title>
+      <link>https://another-outlet.example.org/story/rate-path-open</link>
+      <pubDate>Wed, 02 Sep 2026 11:05:00 GMT</pubDate>
+      <description>Syndicated copy of the same headline.</description>
+      <source url="https://another-outlet.example.org">Another Outlet</source>
+    </item>
+    <item>
+      <title>Bond yields drift lower on softer inflation print - Example Wire</title>
+      <link>https://example.com/news/bond-yields</link>
+      <pubDate>Tue, 01 Sep 2026 22:15:00 GMT</pubDate>
+      <description>Yields eased after the release.</description>
+      <source url="https://example.com">Example Wire</source>
+    </item>
+    <item>
+      <title>Duplicate link item - Example Wire</title>
+      <link>https://example.com/news/bond-yields/</link>
+      <pubDate>Tue, 01 Sep 2026 23:40:00 GMT</pubDate>
+      <description>Same canonical URL as the previous item.</description>
+      <source url="https://example.com">Example Wire</source>
+    </item>
+    <item>
+      <title>Stale story from well before the window - Old Paper</title>
+      <link>https://old-paper.example.net/archive/stale</link>
+      <pubDate>Mon, 03 Aug 2026 08:00:00 GMT</pubDate>
+      <description>Published long before the seven day window.</description>
+      <source url="https://old-paper.example.net">Old Paper</source>
+    </item>
+    <item>
+      <title>Item without a timestamp - Example Wire</title>
+      <link>https://example.com/news/no-date</link>
+      <description>Missing pubDate, must be skipped.</description>
+      <source url="https://example.com">Example Wire</source>
+    </item>
+  </channel>
+</rss>
