@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -9,10 +10,10 @@ APP_PATH = str(Path(__file__).resolve().parents[1] / "app" / "streamlit_app.py")
 
 SECTION_ORDER = (
     "What's Trending?",
-    "AI Trend Summary",
-    "Company Impact",
-    "What to Watch",
-    "Why Did It Move?",
+    "AI Brief",
+    "Business Lens",
+    "Key Watchpoints",
+    "주요 관련 요인",
     "Evidence",
 )
 
@@ -22,12 +23,14 @@ def _run() -> AppTest:
 
 
 def _rendered(app: AppTest) -> str:
-    """Page markup with the stylesheet block dropped.
+    """Page markup with the stylesheet and the inlined logo dropped.
 
-    The <style> block names every hw-* class, so leaving it in would make
-    substring and ordering assertions meaningless.
+    The <style> block names every hw-* class, and the base64 logo is a 28KB
+    alphabet soup that happens to contain words like "Evidence" — either would
+    make substring and ordering assertions meaningless.
     """
-    return "\n".join(item.value for item in app.markdown if "<style>" not in item.value)
+    body = "\n".join(item.value for item in app.markdown if "<style>" not in item.value)
+    return re.sub(r"data:image/[a-z+]+;base64,[A-Za-z0-9+/=]+", "data:image/<logo>", body)
 
 
 class StreamlitAppTest(unittest.TestCase):
@@ -37,19 +40,21 @@ class StreamlitAppTest(unittest.TestCase):
         self.assertEqual(len(app.exception), 0)
         rendered = _rendered(app)
         self.assertIn("Financial Trend Radar", rendered)
-        self.assertIn("글로벌 금융 시그널을 한화 금융계열사의 시각으로 해석합니다", rendered)
+        self.assertIn("업무 관점별 확인 항목을 제시합니다", rendered)
         self.assertIn("PROTOTYPE", rendered)
         self.assertIn("SNAPSHOT MODE", rendered)
 
-        positions = [rendered.index(title) for title in SECTION_ORDER]
+        # Match the heading markup, not the bare word: "Evidence" also appears in
+        # the product subtitle.
+        positions = [rendered.index(f'hw-section">{title}') for title in SECTION_ORDER]
         self.assertEqual(positions, sorted(positions))
 
         self.assertEqual(len(app.segmented_control), 1)
         self.assertEqual(len(app.segmented_control[0].options), 3)
         self.assertGreaterEqual(len(app.warning), 1)
-        self.assertIn("SNAPSHOT DATA", app.warning[0].value)
+        self.assertIn("Representative Snapshot Dataset", app.warning[0].value)
         self.assertGreaterEqual(len(app.info), 1)
-        self.assertIn("Snapshot Evidence", app.info[0].value)
+        self.assertIn("Snapshot Dataset", app.info[0].value)
 
         for company in ("한화생명", "한화투자증권", "한화자산운용"):
             self.assertIn(company, rendered)
@@ -67,27 +72,39 @@ class StreamlitAppTest(unittest.TestCase):
         # Exactly one hero figure on the page.
         self.assertEqual(rendered.count("hw-tile--hero"), 1)
 
-    def test_company_impact_is_rendered_before_evidence(self) -> None:
+    def test_business_lens_is_rendered_before_evidence(self) -> None:
         app = _run()
         rendered = _rendered(app)
-        self.assertLess(rendered.index("Company Impact"), rendered.index("Why Did It Move?"))
+        self.assertLess(
+            rendered.index('hw-section">Business Lens'),
+            rendered.index('hw-section">주요 관련 요인'),
+        )
         self.assertLess(rendered.index("한화생명"), rendered.index("hw-ev-title"))
 
-    def test_company_cards_expose_profile_factors(self) -> None:
+    def test_business_lens_cards_show_check_points_and_metrics(self) -> None:
         app = _run()
         # Count inside the card grid only: the same labels legitimately appear in
         # the section note and the AI-scope disclosure too.
         cards = next(item.value for item in app.markdown if 'class="hw-card"' in item.value)
 
-        for label in ("영향 요인", "Transmission Paths", "Key Metrics to Watch", "Insight"):
+        for label in ("Check Points", "Key Metrics to Watch", "AI Brief"):
             self.assertEqual(cards.count(label), 3)
-        # Positive and negative factors share one list, separated by sign markers.
-        self.assertEqual(cards.count("hw-sign--pos"), 4)
-        self.assertEqual(cards.count("hw-sign--neg"), 6)
-        self.assertIn("보유 채권 평가환경 개선", cards)
-        self.assertIn("신규 재투자수익률 하락", cards)
-        self.assertIn("HIGH", cards)
-        self.assertIn("MIXED", cards)
+        for lens in ("보험 관점", "증권 관점", "자산운용 관점"):
+            self.assertIn(lens, cards)
+        self.assertIn("채권 운용", cards)
+        self.assertIn("운용수익률", cards)
+
+    def test_impact_verdicts_are_not_shown_on_screen(self) -> None:
+        app = _run()
+        rendered = _rendered(app)
+
+        # The prototype offers check points, not an automated impact judgement.
+        for verdict in ("HIGH", "MEDIUM", "LOW", "POSITIVE", "NEGATIVE", "MIXED", "NEUTRAL"):
+            self.assertNotIn(verdict, rendered)
+        for phrase in ("Positive Factors", "Negative Factors", "영향 요인", "Company Impact"):
+            self.assertNotIn(phrase, rendered)
+        # Profile still carries those fields; they are simply not rendered.
+        self.assertIn("판정하지 않습니다", rendered)
 
     def test_ai_and_profile_provenance_is_labelled(self) -> None:
         app = _run()
@@ -96,9 +113,8 @@ class StreamlitAppTest(unittest.TestCase):
         # Legend names all four producers.
         for label in ("AI 생성", "Profile 기준", "Snapshot", "검색 선별"):
             self.assertIn(label, rendered)
-        # Each card marks its AI-written and Profile-driven zones.
+        # Each card marks its AI-written summary and Brief.
         self.assertEqual(rendered.count('hw-prov--ai">AI<'), 6)
-        self.assertEqual(rendered.count('hw-prov--profile">PROFILE<'), 3)
         # The disclosure block states the analysis mode actually in use.
         self.assertIn("cached_llm_output", rendered)
         self.assertIn("AI가 생성하지 않는 것", rendered)
@@ -128,7 +144,7 @@ class StreamlitAppTest(unittest.TestCase):
         self.assertIn("CBOE Volatility Index (VIX)", rendered)
         self.assertIn("+10.8 pts", rendered)
         self.assertIn("투자자산 변동성", rendered)
-        self.assertIn("NEGATIVE", rendered)
+        self.assertIn("Fund Flow", rendered)
 
         app.segmented_control[0].set_value("USDKRW_MOVE").run(timeout=20)
         self.assertEqual(len(app.exception), 0)

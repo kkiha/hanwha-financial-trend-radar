@@ -7,6 +7,18 @@
 
 이 문서는 Claude Code 또는 Codex가 **추가 설명 없이도 프로젝트 맥락을 이해하고, 기존 `rag-finance`를 기반으로 3일 내 피드백 가능한 Prototype을 구현하도록 하기 위한 자급자족형 작업 명세서**다.
 
+> **제품 정의 갱신 (현행)** — PoC 기간과 검증 가능성을 고려해 제품의 주장을 아래
+> 수준으로 낮췄다. 이 문서의 이후 서술 중 "회사별 영향 판정"을 전제한 부분보다
+> 이 정의가 우선한다.
+>
+> "글로벌 금융시장의 이례적인 Signal을 포착하고, 관련 Evidence를 검색·요약한 뒤,
+> 보험 / 증권 / 자산운용 관점에서 추가로 확인할 항목을 제시하는
+> Trend Intelligence Briefing Tool"
+>
+> `Market Signal → Evidence Retrieval → AI Brief → Business Lens → Check Points`
+>
+> 시스템은 회사별 손익 영향, 긍정/부정 방향, 민감도를 확정적으로 판정하는 도구가 아니다.
+
 ## 프로젝트 한 줄 정의
 
 **Hanwha Financial Trend Radar**는 글로벌 금융시장 Signal을 탐지하고, 관련 Evidence를 검색한 뒤, 동일한 Signal이 한화 금융계열사별로 어떤 의미를 가지는지 차등 해석하여 보여주는 AI 기반 Trend Intelligence Prototype이다.
@@ -736,16 +748,19 @@ Company Impact가 스크롤 없이 화면 상단에서 보이도록 아래 순�
 
 ```text
 1. Brand bar          로고 + PROTOTYPE / SNAPSHOT MODE badge
-2. Demo 고지 + Provenance legend
+2. Snapshot 고지 + Provenance legend
 3. Signal Selector    segmented control: [ 금리 ↓ ] [ VIX ↑ ] [ USD/KRW ↑ ]
 4. What's Trending?   headline + metric chip / weekly change(hero) / z-score / direction
-5. AI Trend Summary   trend_summary 1~2문장
-6. Company Impact     3-column 카드
-7. What to Watch      회사별 watchpoints (없으면 key_metrics)
-8. Why Did It Move?   핵심 원인 3개 (causes)
+5. AI Brief           trend_summary 1~2문장
+6. Business Lens      3-column 카드 (보험 / 증권 / 자산운용 관점)
+7. Key Watchpoints    관점별 watchpoints (없으면 key_metrics)
+8. 주요 관련 요인       함께 확인할 관련 요인 3개 (causes)
 9. Evidence           Snapshot 5건, 기본 접힘
-10. 이 화면의 AI 사용 범위  분석 모드·모델·생성 범위 고지, 기본 접힘
+10. 이 화면의 AI · Snapshot 범위   분석 모드·모델·생성 범위 고지, 기본 접힘
 ```
+
+`Company Impact`, `Why Did It Move?` 라는 표현은 사용하지 않는다. 전자는 영향 판정,
+후자는 인과 확정을 주장한다.
 
 Streamlit 기본 상단 헤더 바는 숨긴다. 콘텐츠 위에 겹쳐 떠서 brand bar를 가린다.
 
@@ -777,23 +792,27 @@ AI 생성        trend_summary, causes,          LLM
 - Direction에 빨강·초록을 쓰지 않는다. 좋고 나쁨을 색으로 부여하면 투자 판단 신호가
   되어 `investment_advice: false` 원칙과 충돌한다. 화살표 + 중립 잉크로 표시한다.
 
-### Company Impact 카드 구성
+### Business Lens 카드 구성
 
 ```text
-회사명                        [RELEVANCE][DIRECTION]  ← 작게. 카드의 핵심처럼 보이지 않게
+[보험 관점]                                            ← 관점 라벨
+한화생명
 한 줄 impact_summary                    [AI]          ← 카드에서 가장 눈에 띄는 문장
 ──────────────────────────────────────────
-영향 요인                            [PROFILE]
-＋ positive_factors
-－ negative_factors                                   ← 라벨 2개 대신 부호 마커 한 블록
-TRANSMISSION PATHS  〈chip〉〈chip〉〈chip〉
+CHECK POINTS         〈chip〉〈chip〉〈chip〉           ← profile transmission_paths
 KEY METRICS TO WATCH 〈chip〉〈chip〉                   ← 짧은 명사구는 chip
 ──────────────────────────────────────────
-INSIGHT                                  [AI]         ← 카드 하단 고정(3장 정렬)
+AI BRIEF                                 [AI]         ← 카드 하단 고정(3장 정렬)
 ```
 
-＋/－에 빨강·초록을 쓰지 않는다. 부호와 문장이 이미 방향을 전달하며, 색으로 좋고 나쁨을
-부여하면 투자 판단 신호가 된다.
+### 화면에 표시하지 않는 것
+
+`relevance`, `direction`, `positive_factors`, `negative_factors`는 Profile 데이터에
+남아 있으나 **렌더링하지 않는다.** 영향도와 영향 방향을 자동 판정하는 도구라는 인상을
+주지 않는 것이 이 화면의 요구사항이다.
+
+카드 문구는 결과를 단정하지 않는다. 수익 증가·감소를 단정하지 않고, 회사의 실제
+민감도를 안다고 표현하지 않으며, 검토 관점과 모니터링 포인트를 제공한다.
 
 회사별 차이는 factor와 transmission path에서 즉시 드러나야 하며,
 `direction` 값을 억지로 바꿔 차이를 만들지 않는다.
@@ -927,14 +946,14 @@ Day 3 이후 신규 핵심 기능 추가 금지.
 - Sample / Snapshot Signal (3종: `interest_rate` / `volatility` / `fx`)
 - Trend Retrieval (Snapshot corpus 26건, BM25 + RRF, 회사 필터 없음)
 - Evidence 표시 (5건, `data_mode = demo_snapshot`)
-- Company Profile Mapping (relevance / direction / factors / paths / metrics / watchpoints 주입)
-- Structured AI Insight (cached LLM output + live Groq path)
+- AI Brief (cached LLM output + live Groq path 보존)
+- Business Lens (보험 / 증권 / 자산운용 관점별 Check Points, Profile 주입)
 - Streamlit Dashboard (단일 페이지)
 
 ## 향후 확장 (미구현)
 
-- 실제 최신 데이터 자동수집
-- RSS / API / FRED / ECOS 연동
+- 실시간 크롤링 및 최신 데이터 자동수집
+- 실제 뉴스 API, FRED / ECOS 연동
 - Signal Threshold 기반 Trigger Alert
 - 담당부서 Routing
 - PDF Brief 생성
@@ -959,12 +978,13 @@ Day 3 이후 신규 핵심 기능 추가 금지.
 - [ ] Signal 최소 3개 선택 가능
 - [ ] Signal 변경 시 Evidence 변경
 - [ ] Evidence 최소 3개 표시
-- [ ] 한화 금융계열사 3개 모두 표시
-- [ ] 각 계열사 transmission path 표시
-- [ ] Company Impact가 Evidence보다 위에 표시
+- [ ] 업무 관점 3개(보험 / 증권 / 자산운용) 모두 표시
+- [ ] 각 관점의 Check Points 표시
+- [ ] Business Lens가 Evidence보다 위에 표시
 - [ ] Evidence는 기본 접힘
-- [ ] 각 카드에 positive/negative factors 및 key metrics 표시
-- [ ] relevance / direction이 Profile 값과 일치
+- [ ] 각 카드에 Check Points / Key Metrics / AI Brief 표시
+- [ ] HIGH / MIXED 등 영향 판정 badge가 화면에 없음
+- [ ] positive / negative 영향 판정 영역이 화면에 없음
 - [ ] JSON parsing error 없음
 
 ## C. Reliability

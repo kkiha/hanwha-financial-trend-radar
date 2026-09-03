@@ -25,7 +25,13 @@ from app.dashboard_data import (
 
 
 PRODUCT_NAME = "Financial Trend Radar"
-SUBTITLE = "글로벌 금융 시그널을 한화 금융계열사의 시각으로 해석합니다"
+SUBTITLE = "금융시장 Signal과 관련 Evidence를 연결하고 업무 관점별 확인 항목을 제시합니다"
+# The card is a business lens, not a verdict about a company's P&L.
+LENS_LABELS = {
+    "한화생명": "보험 관점",
+    "한화투자증권": "증권 관점",
+    "한화자산운용": "자산운용 관점",
+}
 ASSET_DIR = PROJECT_ROOT / "assets"
 LOGO_CANDIDATES = (
     "hanwha_logo.svg",
@@ -207,29 +213,20 @@ st.markdown(
         font-size: 0.92rem; line-height: 1.65; color: var(--hw-ink-2);
     }
 
-    /* Company Impact */
+    /* Business Lens */
     .hw-cardgrid {display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;}
     .hw-card {
         background: var(--hw-surface); border: 1px solid var(--hw-line);
         border-top: 3px solid var(--hw-orange); border-radius: 0.6rem;
         padding: 0.85rem 0.95rem 1rem; display: flex; flex-direction: column;
     }
-    .hw-card-head {
-        display: flex; align-items: center; justify-content: space-between;
-        gap: 0.4rem; flex-wrap: wrap;
+    .hw-lens {
+        display: inline-block; font-size: 0.66rem; font-weight: 700;
+        letter-spacing: 0.05em; border-radius: 0.28rem; padding: 0.1rem 0.42rem;
+        background: var(--hw-orange-tint); color: var(--hw-orange-ink);
+        border: 1px solid rgba(245, 126, 32, 0.35); margin-bottom: 0.35rem;
     }
     .hw-company {font-size: 1.02rem; font-weight: 700; color: var(--hw-ink);}
-    .hw-badges {display: flex; gap: 0.25rem;}
-    .hw-badge {
-        font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em;
-        border-radius: 0.28rem; padding: 0.1rem 0.4rem; white-space: nowrap;
-        background: rgba(35, 39, 43, 0.05); color: var(--hw-ink-3);
-        border: 1px solid rgba(35, 39, 43, 0.12);
-    }
-    .hw-badge--dir {
-        background: var(--hw-orange-tint); color: var(--hw-orange-ink);
-        border-color: rgba(245, 126, 32, 0.35);
-    }
     .hw-impact {
         font-size: 0.94rem; font-weight: 600; line-height: 1.5;
         color: var(--hw-ink); margin: 0.5rem 0 0.1rem;
@@ -245,20 +242,6 @@ st.markdown(
     }
     .hw-list li {margin-bottom: 0.1rem;}
     .hw-empty {font-size: 0.8rem; color: var(--hw-ink-3); font-style: italic; margin-top: 0.15rem;}
-
-    /* Impact factors: one list with +/- markers instead of two labelled lists.
-       No red/green — the sign glyph and the wording already carry the direction,
-       and a good/bad color would read as an investment signal. */
-    .hw-factors {margin: 0.3rem 0 0; padding: 0; list-style: none;}
-    .hw-factor {
-        display: flex; font-size: 0.84rem; line-height: 1.55;
-        color: var(--hw-ink-2); margin-bottom: 0.22rem;
-    }
-    .hw-sign {
-        flex: 0 0 1.05rem; text-align: center; font-weight: 700;
-        color: var(--hw-ink-3); margin-right: 0.35rem;
-    }
-    .hw-sign--pos {color: var(--hw-ink);}
 
     /* Short noun phrases read better as chips than as bullet lists. */
     .hw-chiprow {margin-top: 0.22rem;}
@@ -379,10 +362,6 @@ def _list_html(values: Any, empty_text: str = "해당 없음") -> str:
     return f'<ul class="hw-list">{entries}</ul>'
 
 
-def _field_html(label: str, values: Any, empty_text: str = "해당 없음") -> str:
-    return f'<div class="hw-flabel">{_esc(label)}</div>{_list_html(values, empty_text)}'
-
-
 def _chips_html(label: str, values: Any, empty_text: str = "정보 없음") -> str:
     items = _items(values)
     if not items:
@@ -440,12 +419,13 @@ def _render_header() -> None:
         unsafe_allow_html=True,
     )
     st.warning(
-        "DEMO · SNAPSHOT DATA  |  시연용 합성 데이터이며 실시간 시장 데이터가 아닙니다.",
-        icon="⚠️",
+        "SNAPSHOT MODE  |  현재 Prototype은 분석 Workflow와 UX 검증을 위해 "
+        "Representative Snapshot Dataset을 사용합니다.",
+        icon="ℹ️",
     )
     legend = (
-        ("ai", "AI 생성", "요약·원인·해석 문장"),
-        ("profile", "Profile 기준", "관련도·방향·요인·경로·지표"),
+        ("ai", "AI 생성", "Brief 문장과 관련 요인"),
+        ("profile", "Profile 기준", "Check Points와 지표"),
         ("data", "Snapshot", "시그널 수치"),
         ("search", "검색 선별", "근거 5건"),
     )
@@ -493,65 +473,52 @@ def _render_trending(signal: dict[str, Any]) -> None:
 
 
 def _render_trend_summary(trend_summary: str) -> None:
-    _section("AI Trend Summary", tags=_prov("ai", "AI 생성"))
+    _section("AI Brief", tags=_prov("ai", "AI 생성"))
     text = _esc(_display(trend_summary, "요약 정보가 없습니다."))
     st.markdown(f'<div class="hw-summary">{text}</div>', unsafe_allow_html=True)
 
 
-def _factors_html(positive: Any, negative: Any) -> str:
-    rows = [("＋", "pos", item) for item in _items(positive)]
-    rows += [("－", "neg", item) for item in _items(negative)]
-    if not rows:
-        return '<div class="hw-empty">요인 정보가 없습니다.</div>'
-    entries = "".join(
-        f'<li class="hw-factor"><span class="hw-sign hw-sign--{kind}">{sign}</span>'
-        f"<span>{_esc(text)}</span></li>"
-        for sign, kind, text in rows
-    )
-    return f'<ul class="hw-factors">{entries}</ul>'
+def _lens_card_html(company: str, impact: dict[str, Any]) -> str:
+    """A business lens: what to examine under this signal, not a verdict.
 
-
-def _company_card_html(company: str, impact: dict[str, Any]) -> str:
+    relevance/direction and the positive/negative factor lists stay in the
+    profile data but are deliberately not rendered — showing them reads as an
+    automated impact judgement, which this prototype does not make.
+    """
     summary = _display(impact.get("impact_summary"), "")
     summary_html = (
         f'<div class="hw-impact">{_esc(summary)}{_prov("ai", "AI")}</div>' if summary else ""
     )
     return (
         '<div class="hw-card">'
-        '<div class="hw-card-head">'
-        f'<span class="hw-company">{_esc(company)}</span>'
-        '<span class="hw-badges">'
-        f'<span class="hw-badge">{_esc(_display(impact.get("relevance"), "정보 없음"))}</span>'
-        f'<span class="hw-badge hw-badge--dir">{_esc(_display(impact.get("direction"), "정보 없음"))}</span>'
-        "</span></div>"
+        f'<div class="hw-lens">{_esc(LENS_LABELS.get(company, "업무 관점"))}</div>'
+        f'<div class="hw-company">{_esc(company)}</div>'
         f"{summary_html}"
         '<div class="hw-rule"></div>'
-        f'<div class="hw-flabel">영향 요인{_prov("profile", "PROFILE")}</div>'
-        f"{_factors_html(impact.get('positive_factors'), impact.get('negative_factors'))}"
-        f'{_chips_html("Transmission Paths", impact.get("transmission_paths"))}'
+        f'{_chips_html("Check Points", impact.get("transmission_paths"))}'
         f'{_chips_html("Key Metrics to Watch", impact.get("key_metrics"))}'
         '<div class="hw-insight-block"><div class="hw-rule"></div>'
-        f'<div class="hw-flabel">Insight{_prov("ai", "AI")}</div>'
-        f'<div class="hw-insight">{_esc(_display(impact.get("insight"), "분석 결과가 없습니다."))}</div>'
+        f'<div class="hw-flabel">AI Brief{_prov("ai", "AI")}</div>'
+        f'<div class="hw-insight">{_esc(_display(impact.get("insight"), "요약 정보가 없습니다."))}</div>'
         "</div></div>"
     )
 
 
-def _render_companies(companies: dict[str, dict[str, Any]]) -> None:
+def _render_business_lens(companies: dict[str, dict[str, Any]]) -> None:
     _section(
-        "Company Impact",
-        "relevance·direction·요인·경로·지표는 Company Profile에서 직접 읽습니다. "
-        "요약 문장과 Insight만 AI가 작성합니다.",
+        "Business Lens",
+        "같은 Signal에서 업무 관점별로 추가 확인할 항목입니다. "
+        "Check Points와 지표는 Company Profile에서 읽고, Brief 문장만 AI가 작성합니다.",
         _prov("profile", "Profile 기준") + _prov("ai", "AI 생성"),
     )
     cards = "".join(
-        _company_card_html(company, companies.get(company, {})) for company in COMPANY_ORDER
+        _lens_card_html(company, companies.get(company, {})) for company in COMPANY_ORDER
     )
     st.markdown(f'<div class="hw-cardgrid">{cards}</div>', unsafe_allow_html=True)
 
 
 def _render_watchlist(companies: dict[str, dict[str, Any]]) -> None:
-    _section("What to Watch", tags=_prov("profile", "Profile 기준"))
+    _section("Key Watchpoints", tags=_prov("profile", "Profile 기준"))
     blocks = []
     for company in COMPANY_ORDER:
         impact = companies.get(company, {})
@@ -566,7 +533,12 @@ def _render_watchlist(companies: dict[str, dict[str, Any]]) -> None:
 
 
 def _render_causes(causes: list[str]) -> None:
-    _section("Why Did It Move?", tags=_prov("ai", "AI 생성"))
+    # Not "Why Did It Move?" — the prototype does not establish causation.
+    _section(
+        "주요 관련 요인",
+        "현재 Signal과 함께 확인할 주요 관련 요인입니다. 원인을 확정한 것은 아닙니다.",
+        _prov("ai", "AI 생성"),
+    )
     items = _items(causes)[:3]
     if not items:
         st.markdown('<div class="hw-empty">원인 정보가 없습니다.</div>', unsafe_allow_html=True)
@@ -581,8 +553,8 @@ def _render_evidence(evidence: list[dict[str, Any]]) -> None:
         "LLM이 아니라 BM25 + RRF 검색으로 Snapshot corpus에서 선별한 근거입니다.",
         _prov("search", "검색 선별"),
     )
-    with st.expander(f"근거 Snapshot {len(evidence)}건 보기", expanded=False):
-        st.info("아래 근거는 실제 기사나 실시간 피드가 아닌 합성 Snapshot Evidence입니다.", icon="ℹ️")
+    with st.expander(f"관련 Evidence {len(evidence)}건 보기", expanded=False):
+        st.info("Representative Snapshot Dataset에서 선별한 문서입니다.", icon="ℹ️")
         if not evidence:
             st.warning("표시할 Evidence가 없습니다.")
             return
@@ -617,23 +589,25 @@ def _render_ai_scope(metadata: dict[str, Any]) -> None:
     model_row = (
         f'<tr><td class="hw-scope-k">모델</td><td>{_esc(model)}</td></tr>' if model else ""
     )
-    with st.expander("이 화면의 AI 사용 범위", expanded=False):
+    with st.expander("이 화면의 AI · Snapshot 범위", expanded=False):
         st.markdown(
             '<table class="hw-scope">'
             f'<tr><td class="hw-scope-k">분석 모드</td><td><code>{_esc(analysis_mode)}</code> — {_esc(mode_note)}</td></tr>'
             f"{model_row}"
             '<tr><td class="hw-scope-k">AI가 생성하는 것</td><td>'
-            "Trend Summary, Why Did It Move?의 원인 3건, 카드의 요약 문장과 Insight</td></tr>"
+            "AI Brief, 주요 관련 요인 3건, Business Lens 카드의 요약 문장과 Brief</td></tr>"
             '<tr><td class="hw-scope-k">AI가 생성하지 않는 것</td><td>'
-            "relevance, direction, 긍정·부정 요인, 전달 경로, 주요 지표, watchpoints "
-            "— 모두 Company Profile에서 직접 읽어 주입합니다.</td></tr>"
+            "Check Points, 주요 지표, Key Watchpoints — 모두 Company Profile에서 직접 읽습니다.</td></tr>"
+            '<tr><td class="hw-scope-k">판정하지 않는 것</td><td>'
+            "이 도구는 회사별 손익 영향, 긍정·부정 방향, 민감도를 확정적으로 판정하지 않습니다. "
+            "추가로 확인할 항목을 제시하는 데까지가 범위입니다.</td></tr>"
             '<tr><td class="hw-scope-k">근거(Evidence)</td><td>'
             "LLM 생성물이 아니라 Snapshot corpus 26건에서 BM25 + RRF로 검색해 선별합니다.</td></tr>"
             '<tr><td class="hw-scope-k">시그널 수치</td><td>'
-            "고정된 합성 Snapshot입니다. 실시간 시장 데이터가 아닙니다.</td></tr>"
+            "Representative Snapshot Dataset의 고정 값입니다. 실시간 시장 데이터가 아닙니다.</td></tr>"
             '<tr><td class="hw-scope-k">검증</td><td>'
             "JSON schema 검증과 Profile grounding을 통과한 출력만 사용합니다. "
-            "Profile에 없는 전달 경로가 나오면 실패로 처리합니다.</td></tr>"
+            "Profile에 없는 Check Point가 나오면 실패로 처리합니다.</td></tr>"
             '<tr><td class="hw-scope-k">하지 않는 것</td><td>'
             "투자 추천, 매수·매도 의견, 목표가를 생성하지 않습니다 "
             "(<code>investment_advice: false</code>).</td></tr>"
@@ -656,7 +630,7 @@ def main() -> None:
         st.error(error)
     _render_trending(payload.get("signal", {}))
     _render_trend_summary(payload.get("trend_summary", ""))
-    _render_companies(payload.get("companies", {}))
+    _render_business_lens(payload.get("companies", {}))
     _render_watchlist(payload.get("companies", {}))
     _render_causes(payload.get("causes", []))
     _render_evidence(payload.get("evidence", []))
