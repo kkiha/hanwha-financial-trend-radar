@@ -507,17 +507,21 @@ def _refresh_now() -> None:
         try:
             report = refresh()
         except Exception as exc:  # noqa: BLE001 - the demo must survive any failure
-            st.session_state["gf_message"] = f"수집에 실패했습니다. 기존 결과를 유지합니다. ({type(exc).__name__})"
+            st.session_state["gf_message"] = (
+                f"수집에 실패했습니다. 기존 결과를 유지합니다. ({type(exc).__name__}: {exc})"
+            )
             return
+
+    summary = report.get("summary", "")
     if report.get("clustered"):
         st.session_state["gf_message"] = (
-            f"기사 {report.get('collected', 0)}건을 수집하고 트렌드 {report.get('trends', 0)}건을 갱신했습니다."
+            f"{summary} · 트렌드 {report.get('trends', 0)}건 갱신"
         )
     else:
+        # Partial success still shows the counts, then why the AI step stopped.
         st.session_state["gf_message"] = (
-            f"기사 {report.get('collected', 0)}건을 수집했습니다. "
-            f"트렌드 갱신은 건너뛰었고 기존 결과를 유지합니다. ({report.get('error', '')})"
-        )
+            f"{summary} · {report.get('error', '')} 기존 결과를 유지합니다."
+        ).replace("\n", " ")
 
 
 def main() -> None:

@@ -16,10 +16,14 @@ from rag_finance.ingestion.rss_collector import WATCH_AREAS
 
 
 TREND_COUNT = 3
-MAX_ARTICLES_FOR_LLM = 60
+# Sized for Groq's free tier, which caps tokens-per-minute for the whole request
+# (prompt + max_tokens). 36 trimmed articles leave room for the model's output.
+MAX_ARTICLES_FOR_LLM = 36
+# The full RSS summary is kept in the payload; only the prompt copy is trimmed.
+LLM_SUMMARY_MAX_CHARS = 140
 MAX_TAGS_PER_TREND = 3
 MAX_WATCH_NEXT = 3
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 # The model may only pick from this list; anything else is dropped.
 ALLOWED_BUSINESS_TAGS: tuple[str, ...] = (
@@ -78,8 +82,9 @@ def build_cluster_messages(
             "article_id": article.get("article_id"),
             "title": article.get("title"),
             "source": article.get("source"),
-            "published_at": article.get("published_at"),
-            "summary": article.get("summary"),
+            # Date alone is enough to group a week; the time of day is noise here.
+            "published_at": str(article.get("published_at") or "")[:10],
+            "summary": str(article.get("summary") or "")[:LLM_SUMMARY_MAX_CHARS],
             "watch_area": article.get("watch_area"),
         }
         for article in articles
@@ -225,9 +230,10 @@ def cluster_trends(
     api_key: str | None = None,
     model: str = DEFAULT_MODEL,
     temperature: float = 0.2,
-    max_tokens: int = 2000,
+    max_tokens: int = 2600,
     window_days: int = 7,
     max_articles: int = MAX_ARTICLES_FOR_LLM,
+    reasoning_effort: str | None = "low",
 ) -> dict[str, Any]:
     if len(articles) < TREND_COUNT:
         raise ValueError("At least three articles are required to build trends")
@@ -243,13 +249,36 @@ def cluster_trends(
             raise RuntimeError("Install the groq package for trend clustering") from exc
         client = Groq(api_key=key)
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=build_cluster_messages(selected, window_days=window_days),
-        temperature=temperature,
-        max_tokens=max_tokens,
-    )
-    payload = parse_structured_json(response.choices[0].message.content)
+    request: dict[str, Any] = {
+        "model": model,
+        "messages": build_cluster_messages(selected, window_days=window_days),
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        # Force a parseable object rather than prose wrapped around it.
+        "response_format": {"type": "json_object"},
+    }
+    if reasoning_effort:
+        # Reasoning models otherwise spend the whole budget thinking and return
+        # empty content with finish_reason "length".
+        request["reasoning_effort"] = reasoning_effort
+
+    try:
+        response = client.chat.completions.create(**request)
+    except TypeError:
+        # A client or model that does not accept these options.
+        request.pop("reasoning_effort", None)
+        request.pop("response_format", None)
+        response = client.chat.completions.create(**request)
+
+    message = response.choices[0].message
+    content = getattr(message, "content", "") or ""
+    if not content.strip():
+        finish = getattr(response.choices[0], "finish_reason", "unknown")
+        raise ValueError(
+            f"Model returned no content (finish_reason={finish}). "
+            "max_tokens 를 늘리거나 reasoning_effort 를 낮춰 주세요."
+        )
+    payload = parse_structured_json(content)
     result = validate_trend_payload(payload, selected)
     result["model"] = model
     result["analyzed_article_count"] = len(selected)

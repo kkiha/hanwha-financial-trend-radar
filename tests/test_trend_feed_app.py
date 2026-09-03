@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import unittest
 from pathlib import Path
@@ -7,6 +8,21 @@ from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 APP_PATH = str(Path(__file__).resolve().parents[1] / "app" / "trend_feed_app.py")
+
+
+def setUpModule() -> None:
+    """Pin the app to the bundled fallback.
+
+    Without this the suite reads whatever data/live holds, so a real refresh
+    would flip these DEMO assertions.
+    """
+    os.environ["GFR_LIVE_TRENDS_PATH"] = str(
+        Path(__file__).resolve().parent / "fixtures" / "no_such_live_file.json"
+    )
+
+
+def tearDownModule() -> None:
+    os.environ.pop("GFR_LIVE_TRENDS_PATH", None)
 
 
 def _run() -> AppTest:

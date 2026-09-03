@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 import json
+import os
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -235,14 +236,21 @@ def _is_fresh(raw: Mapping[str, Any], reference: datetime) -> bool:
     return (reference - generated) <= timedelta(hours=LIVE_FRESH_HOURS)
 
 
+def default_live_path() -> Path:
+    """GFR_LIVE_TRENDS_PATH lets tests pin the payload instead of reading data/live."""
+    override = os.environ.get("GFR_LIVE_TRENDS_PATH", "").strip()
+    return Path(override) if override else LIVE_TRENDS_PATH
+
+
 def load_trend_feed(
     *,
-    live_path: Path = LIVE_TRENDS_PATH,
+    live_path: Path | str | None = None,
     fallback_path: Path = FALLBACK_PATH,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Prefer a valid live payload; otherwise fall back to the bundled demo file."""
     reference = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    live_path = Path(live_path) if live_path else default_live_path()
     live = _read_json(Path(live_path))
     if live and live.get("trends") and _as_articles(live.get("articles")):
         payload = build_payload(

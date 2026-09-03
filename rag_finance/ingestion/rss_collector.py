@@ -7,12 +7,14 @@ short description) is kept.
 
 from __future__ import annotations
 
+import concurrent.futures
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from difflib import SequenceMatcher
 from email.utils import parsedate_to_datetime
 import hashlib
 import re
+import time
 from typing import Any, Iterable, Sequence
 import urllib.parse
 import xml.etree.ElementTree as ET
@@ -39,6 +41,51 @@ WATCH_AREAS: dict[str, dict[str, str]] = {
     },
 }
 
+# Direct publisher feeds, verified to return items. The search feeds above are
+# rate-limited per host and answer 200 with an empty channel when throttled, so
+# these keep a refresh useful when that happens. Their articles are classified
+# into a watch area by keyword rather than by query.
+BACKUP_FEEDS: tuple[dict[str, str], ...] = (
+    {
+        "url": "https://www.ecb.europa.eu/rss/press.html",
+        "language": "en",
+        "default_area": "rates_liquidity",
+    },
+    {
+        "url": "https://www.yna.co.kr/rss/economy.xml",
+        "language": "ko",
+        "default_area": "risk_flows",
+    },
+    {
+        "url": "https://www.hankyung.com/feed/economy",
+        "language": "ko",
+        "default_area": "risk_flows",
+    },
+    {
+        "url": "https://www.mk.co.kr/rss/30100041/",
+        "language": "ko",
+        "default_area": "risk_flows",
+    },
+)
+
+# Keyword hints for classifying general economy feeds into a watch area.
+AREA_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "rates_liquidity": (
+        "금리", "물가", "국채", "채권", "중앙은행", "한국은행", "연준", "기준금리", "유동성",
+        "inflation", "interest rate", "bond", "yield", "central bank", "monetary", "liquidity",
+    ),
+    "regulation_innovation": (
+        "규제", "금융위", "금감원", "감독", "토큰", "스테이블코인", "가상자산", "디지털금융",
+        "인공지능", "제도",
+        "regulation", "supervis", "token", "stablecoin", "digital finance", "crypto",
+        "artificial intelligence",
+    ),
+    "risk_flows": (
+        "증시", "환율", "변동성", "자금", "외국인", "신용", "리스크", "위험",
+        "market", "volatility", "credit", "capital flow", "currency", "risk",
+    ),
+}
+
 GOOGLE_NEWS_SEARCH = "https://news.google.com/rss/search"
 FEED_LOCALES: dict[str, dict[str, str]] = {
     "en": {"hl": "en-US", "gl": "US", "ceid": "US:en", "query_key": "global_query"},
@@ -47,9 +94,19 @@ FEED_LOCALES: dict[str, dict[str, str]] = {
 
 DEFAULT_WINDOW_DAYS = 7
 DEFAULT_TIMEOUT = 12
+DEFAULT_RETRIES = 1
+RETRY_BACKOFF_SECONDS = 1.0
+MAX_WORKERS = 8
 USER_AGENT = "HanwhaGlobalFinanceRadar/0.1 (prototype; RSS only)"
 TITLE_MATCH_RATIO = 0.86
 SUMMARY_MAX_CHARS = 320
+
+# Why a collection produced nothing, so the caller can tell the user what to fix.
+REASON_OK = "ok"
+REASON_MISSING_DEPENDENCY = "missing_dependency"
+REASON_ALL_FEEDS_FAILED = "all_feeds_failed"
+REASON_EMPTY_FEEDS = "empty_feeds"
+REASON_NO_RECENT_ARTICLES = "no_recent_articles"
 
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
@@ -64,14 +121,26 @@ class FeedSpec:
     url: str
     watch_area: str
     language: str
+    provider: str = "search"
+    classify: bool = False
+
+
+def classify_watch_area(text: str, default: str) -> str:
+    """Pick a watch area by keyword; used for general economy feeds."""
+    lowered = str(text or "").lower()
+    for area, keywords in AREA_KEYWORDS.items():
+        if any(keyword.lower() in lowered for keyword in keywords):
+            return area
+    return default
 
 
 def build_feed_specs(
     watch_areas: dict[str, dict[str, str]] | None = None,
     *,
     window_days: int = DEFAULT_WINDOW_DAYS,
+    include_backup: bool = True,
 ) -> list[FeedSpec]:
-    """One search feed per watch area per language."""
+    """One search feed per watch area per language, plus direct publisher feeds."""
     areas = watch_areas or WATCH_AREAS
     specs: list[FeedSpec] = []
     for area_key, area in areas.items():
@@ -92,6 +161,18 @@ def build_feed_specs(
                     language=language,
                 )
             )
+
+    if include_backup:
+        specs.extend(
+            FeedSpec(
+                url=feed["url"],
+                watch_area=feed["default_area"],
+                language=feed["language"],
+                provider="direct",
+                classify=True,
+            )
+            for feed in BACKUP_FEEDS
+        )
     return specs
 
 
@@ -296,6 +377,63 @@ def fetch_feed_text(url: str, *, timeout: int = DEFAULT_TIMEOUT) -> str:
     return response.text
 
 
+def _fetch_one(
+    spec: FeedSpec,
+    *,
+    fetcher,
+    timeout: int,
+    retries: int,
+    window_days: int,
+    reference: datetime,
+) -> dict[str, Any]:
+    """Fetch and parse a single feed. Never raises: the report carries the failure."""
+    report: dict[str, Any] = {
+        "watch_area": spec.watch_area,
+        "language": spec.language,
+        "provider": spec.provider,
+        "ok": False,
+        "count": 0,
+        "attempts": 0,
+    }
+    last_error: Exception | None = None
+
+    for attempt in range(retries + 1):
+        report["attempts"] = attempt + 1
+        try:
+            xml_text = fetcher(spec.url, timeout=timeout)
+        except ImportError as exc:
+            # A missing dependency will not fix itself on a retry.
+            report.update(error=f"{type(exc).__name__}: {exc}", error_kind="dependency")
+            return report
+        except Exception as exc:  # noqa: BLE001 - a broken feed is expected, not fatal
+            last_error = exc
+            if attempt < retries:
+                time.sleep(RETRY_BACKOFF_SECONDS)
+            continue
+
+        parsed = parse_feed(
+            xml_text,
+            watch_area=spec.watch_area,
+            language=spec.language,
+            fetched_at=reference,
+        )
+        if spec.classify:
+            for article in parsed:
+                article["watch_area"] = classify_watch_area(
+                    f"{article.get('title', '')} {article.get('summary', '')}",
+                    spec.watch_area,
+                )
+        # A provider that throttles answers 200 with a valid but item-less feed,
+        # so "responded" and "returned articles" have to be tracked separately.
+        report.update(ok=True, count=len(parsed), empty=not parsed, articles=parsed)
+        return report
+
+    report.update(
+        error=f"{type(last_error).__name__}: {last_error}", error_kind="request"
+    )
+    return report
+
+
 def collect_articles(
     *,
     window_days: int = DEFAULT_WINDOW_DAYS,
@@ -303,44 +441,79 @@ def collect_articles(
     fetcher=fetch_feed_text,
     now: datetime | None = None,
     timeout: int = DEFAULT_TIMEOUT,
+    retries: int = DEFAULT_RETRIES,
+    max_workers: int = MAX_WORKERS,
+    include_backup: bool = True,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Fetch every feed; one failing feed must not stop the collection."""
+    """Fetch every feed in parallel; one failing feed must not stop the collection."""
     reference = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
-    specs = build_feed_specs(watch_areas, window_days=window_days)
-    raw: list[dict[str, Any]] = []
-    feed_reports: list[dict[str, Any]] = []
+    specs = build_feed_specs(
+        watch_areas, window_days=window_days, include_backup=include_backup
+    )
+    started = time.perf_counter()
 
-    for spec in specs:
-        report: dict[str, Any] = {
-            "watch_area": spec.watch_area,
-            "language": spec.language,
-            "ok": False,
-            "count": 0,
-        }
-        try:
-            xml_text = fetcher(spec.url, timeout=timeout)
-            parsed = parse_feed(
-                xml_text,
-                watch_area=spec.watch_area,
-                language=spec.language,
-                fetched_at=reference,
+    workers = max(1, min(max_workers, len(specs) or 1))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        feed_reports = list(
+            pool.map(
+                lambda spec: _fetch_one(
+                    spec,
+                    fetcher=fetcher,
+                    timeout=timeout,
+                    retries=retries,
+                    window_days=window_days,
+                    reference=reference,
+                ),
+                specs,
             )
-            raw.extend(parsed)
-            report.update(ok=True, count=len(parsed))
-        except Exception as exc:  # noqa: BLE001 - a broken feed is expected, not fatal
-            report["error"] = f"{type(exc).__name__}: {exc}"
-        feed_reports.append(report)
+        )
+
+    raw: list[dict[str, Any]] = []
+    for report in feed_reports:
+        raw.extend(report.pop("articles", []))
 
     recent = within_window(raw, window_days=window_days, now=reference)
     articles = dedupe_articles(recent)
+
+    ok_reports = [item for item in feed_reports if item["ok"]]
+    with_articles = [item for item in ok_reports if item["count"]]
+    if not ok_reports:
+        if any(item.get("error_kind") == "dependency" for item in feed_reports):
+            reason = REASON_MISSING_DEPENDENCY
+        else:
+            reason = REASON_ALL_FEEDS_FAILED
+    elif not with_articles:
+        reason = REASON_EMPTY_FEEDS
+    elif not articles:
+        reason = REASON_NO_RECENT_ARTICLES
+    else:
+        reason = REASON_OK
+
     debug = {
         "collected_at": reference.isoformat(),
         "window_days": window_days,
         "feeds_total": len(specs),
-        "feeds_ok": sum(1 for item in feed_reports if item["ok"]),
+        "feeds_ok": len(ok_reports),
+        "feeds_with_articles": len(with_articles),
+        "feeds_empty": len(ok_reports) - len(with_articles),
+        "feeds_failed": len(feed_reports) - len(ok_reports),
+        "ok_by_language": {
+            language: sum(1 for item in ok_reports if item["language"] == language)
+            for language in FEED_LOCALES
+        },
+        "with_articles_by_language": {
+            language: sum(1 for item in with_articles if item["language"] == language)
+            for language in FEED_LOCALES
+        },
         "raw_count": len(raw),
         "in_window_count": len(recent),
         "deduped_count": len(articles),
+        "language_counts": {
+            language: sum(1 for item in articles if item.get("language") == language)
+            for language in FEED_LOCALES
+        },
+        "reason": reason,
+        "elapsed_seconds": round(time.perf_counter() - started, 2),
         "feeds": feed_reports,
     }
     return articles, debug
