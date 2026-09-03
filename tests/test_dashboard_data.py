@@ -5,13 +5,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.dashboard_data import COMPANY_ORDER, available_signal_ids, load_dashboard_payload
+from app.dashboard_data import (
+    COMPANY_ORDER,
+    SIGNAL_CATALOG,
+    available_signal_ids,
+    load_dashboard_payload,
+)
+from rag_finance.profiles.loader import load_company_profiles
 
 
 class DashboardDataTest(unittest.TestCase):
     def test_loads_day1_artifacts_by_signal_id(self) -> None:
         payload = load_dashboard_payload("US10Y_SAMPLE")
         self.assertEqual(payload["signal"]["headline"], "미국 장기금리 급락")
+        self.assertTrue(payload["trend_summary"])
+        self.assertEqual(len(payload["causes"]), 3)
         self.assertGreaterEqual(len(payload["evidence"]), 3)
         self.assertEqual(tuple(payload["companies"]), COMPANY_ORDER)
         self.assertEqual(payload["metadata"]["data_mode"], "demo_snapshot")
@@ -46,6 +54,29 @@ class DashboardDataTest(unittest.TestCase):
                 for payload in payloads.values()
             }
             self.assertEqual(len(paths_across_signals), 3)
+
+    def test_relevance_and_direction_come_from_company_profile(self) -> None:
+        profiles = load_company_profiles("profiles")
+        for signal_id, entry in SIGNAL_CATALOG.items():
+            cached = json.loads(
+                Path(entry["cache_path"]).read_text(encoding="utf-8")
+            )
+            payload = load_dashboard_payload(signal_id)
+            category = payload["signal"]["category"]
+            for company in COMPANY_ORDER:
+                with self.subTest(signal_id=signal_id, company=company):
+                    # The cached LLM output must not carry these fields at all.
+                    self.assertNotIn("relevance", cached["companies"][company])
+                    self.assertNotIn("direction", cached["companies"][company])
+                    exposure = profiles[company]["market_exposures"][category]
+                    impact = payload["companies"][company]
+                    self.assertEqual(impact["relevance"], exposure["relevance"].upper())
+                    self.assertEqual(impact["direction"], exposure["direction"].upper())
+                    self.assertEqual(impact["positive_factors"], exposure["positive_factors"])
+                    self.assertEqual(impact["negative_factors"], exposure["negative_factors"])
+                    self.assertEqual(impact["key_metrics"], exposure["key_metrics"])
+                    self.assertEqual(impact["watchpoints"], exposure["watchpoints"])
+                    self.assertTrue(impact["impact_summary"])
 
     def test_missing_json_fields_return_safe_fallbacks(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -6,7 +6,7 @@
     "weekly_change": 10.8,
     "z_score": 2.6
   },
-  "trend_summary": "시연용 Snapshot에서는 정책 불확실성, 주식시장 조정과 옵션 헤지 수요가 VIX 급등과 Risk-off 확산을 설명한다. 이는 실시간 시장 분석이 아닌 합성 Prototype 시나리오다.",
+  "trend_summary": "정책 경로 불확실성과 주식시장 조정, 옵션 헤지 수요가 겹치며 VIX가 급등하고 Risk-off가 확산된 시나리오입니다. 보험은 자본·리스크 관리, 증권은 거래활동, 자산운용은 Fund Flow라는 서로 다른 경로로 전달됩니다.",
   "causes": [
     "정책 경로 불확실성 확대 가정",
     "주식시장 조정과 옵션 헤지 수요 증가",
@@ -14,22 +14,19 @@
   ],
   "companies": {
     "한화생명": {
-      "relevance": "HIGH",
-      "direction": "NEGATIVE",
+      "impact_summary": "투자자산 변동성이 자본·리스크 관리 부담으로 한 방향으로 전달되는 구간",
       "transmission_paths": ["투자자산 변동성", "자본관리", "리스크 관리"],
-      "insight": "투자자산 변동 확대가 자본관리와 리스크 관리 부담으로 전달될 수 있다. 실제 민감도와 수치는 검증되지 않았으며 TODO_VERIFY 범위를 넘지 않는다."
+      "insight": "변동성 확대는 투자자산 평가 변동을 키우고 자본관리와 리스크 관리 대응 부담으로 이어져, 세 경로가 서로 상쇄되지 않고 같은 방향으로 작용한다."
     },
     "한화투자증권": {
-      "relevance": "HIGH",
-      "direction": "MIXED",
+      "impact_summary": "거래대금 증가 기대와 위험자산 심리 위축이 맞물리는 구간",
       "transmission_paths": ["거래대금", "Trading", "위험자산 심리"],
-      "insight": "단기 거래대금과 Trading 활동 변화 가능성은 있지만 위험자산 심리 위축이 함께 작용할 수 있다. 실제 수익 영향은 추정하지 않는다."
+      "insight": "변동성 확대는 단기 거래대금을 늘려 브로커리지 환경에 우호적으로 작용할 수 있지만, 위험자산 심리 위축과 Trading 손익 변동 확대가 반대 방향으로 작용한다."
     },
     "한화자산운용": {
-      "relevance": "HIGH",
-      "direction": "MIXED",
+      "impact_summary": "위험자산 Fund Flow 이탈과 안전자산 선호가 동시에 나타나는 구간",
       "transmission_paths": ["Fund Flow", "Risk-off", "Asset Allocation"],
-      "insight": "Risk-off에 따른 Fund Flow 변화와 Asset Allocation 재조정 가능성을 함께 봐야 한다. 특정 상품이나 성과에 대한 판단은 포함하지 않는다."
+      "insight": "Risk-off 확산은 위험자산에서 자금 이탈을 유발하는 한편 안전자산으로는 일부 자금 유입을 만들 수 있어, Asset Allocation 재조정 필요성과 Fund Flow 방향을 함께 봐야 한다."
     }
   }
 }

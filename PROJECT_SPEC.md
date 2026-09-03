@@ -395,12 +395,55 @@ market_exposures:
   interest_rate:
     relevance: high
     direction: mixed
+
+    positive_factors:
+      - 보유 채권 평가환경 개선
+
+    negative_factors:
+      - 신규 재투자수익률 하락
+      - ALM 관점의 자산·부채 듀레이션 부담
+
     transmission_paths:
       - 채권 운용
       - 신규 재투자수익률
       - ALM
+
+    key_metrics:
+      - 운용수익률
+      - ALM 관련 지표
+
+    watchpoints:
+      - 신규 투자수익률 변화
+      - 자산·부채 듀레이션 갭
+
     source_status: TODO_VERIFY
 ```
+
+`transmission_paths`, `key_metrics`, `watchpoints`는 비어 있을 수 없다.
+`positive_factors`와 `negative_factors`는 한쪽이 비어 있을 수 있으나
+(한 방향으로만 작용하는 exposure) 둘 다 비어 있을 수는 없다.
+
+## Source of Truth
+
+`relevance`와 `direction`은 **Company Profile이 소유한다.** LLM은 이 두 값을 생성하지
+않으며, 시스템이 해당 signal category exposure에서 읽어 최종 JSON에 주입한다.
+
+주입 지점은 `rag_finance/profiles/loader.py:apply_profile_exposure()` 한 곳이며,
+cached path·live path·Streamlit dashboard가 모두 이 함수를 통과해 동일한 최종 schema를
+만든다. 주입 대상은 다음과 같다.
+
+```text
+relevance
+direction
+positive_factors
+negative_factors
+key_metrics
+watchpoints
+source_status
+```
+
+`transmission_paths`는 분석 결과에서 오되 `_validate_profile_grounding()`이 Profile에
+정의된 경로의 부분집합인지 검증한다.
 
 ## Required Field
 
@@ -577,7 +620,9 @@ app/
 
 LLM Trend Analyzer는 자유 텍스트가 아니라 JSON을 반환한다.
 
-## Required Schema
+## LLM Output Schema
+
+LLM은 아래만 생성한다. `relevance`와 `direction`은 포함하지 않는다 (§7 Source of Truth).
 
 ```json
 {
@@ -592,20 +637,17 @@ LLM Trend Analyzer는 자유 텍스트가 아니라 JSON을 반환한다.
   "causes": [],
   "companies": {
     "한화생명": {
-      "relevance": "HIGH",
-      "direction": "MIXED",
+      "impact_summary": "",
       "transmission_paths": [],
       "insight": ""
     },
     "한화투자증권": {
-      "relevance": "HIGH",
-      "direction": "POSITIVE",
+      "impact_summary": "",
       "transmission_paths": [],
       "insight": ""
     },
     "한화자산운용": {
-      "relevance": "HIGH",
-      "direction": "MIXED",
+      "impact_summary": "",
       "transmission_paths": [],
       "insight": ""
     }
@@ -613,7 +655,30 @@ LLM Trend Analyzer는 자유 텍스트가 아니라 JSON을 반환한다.
 }
 ```
 
+## Final Schema (Profile 주입 후)
+
+`analyze_trend()` 및 dashboard payload가 소비하는 최종 회사 블록:
+
+```json
+{
+  "relevance": "HIGH",
+  "direction": "MIXED",
+  "impact_summary": "",
+  "positive_factors": [],
+  "negative_factors": [],
+  "transmission_paths": [],
+  "key_metrics": [],
+  "watchpoints": [],
+  "source_status": "TODO_VERIFY",
+  "insight": ""
+}
+```
+
+cached path와 live path는 같은 주입 함수를 통과하므로 이 schema가 동일하게 보장된다.
+
 ## Allowed Enum
+
+주입값 검증에 사용한다. LLM 출력 계약이 아니다.
 
 ### relevance
 
@@ -641,11 +706,19 @@ Prompt에 다음 규칙을 포함한다.
 1. Company Profile에 없는 사업구조를 임의 생성하지 않는다.
 2. Evidence에 없는 사건을 만들지 않는다.
 3. 근거 없는 숫자를 생성하지 않는다.
-4. 복합 영향은 `MIXED`를 사용한다.
+4. `relevance`와 `direction`은 생성하지 않는다 (Profile 주입).
 5. 투자 추천, 매수/매도 의견을 만들지 않는다.
-6. Evidence가 부족하면 이를 명시한다.
+6. Profile의 `positive_factors` / `negative_factors`를 근거로 해석 문장을 작성한다.
 7. JSON 외 텍스트를 출력하지 않는다.
 8. 각 계열사 결과가 억지로 달라질 필요는 없지만, Profile에 근거한 차이는 반영한다.
+
+## Insight Tone
+
+Prototype 한계는 화면 상단 Demo/Snapshot 배너가 고지한다. 따라서 카드 내부
+`insight` / `impact_summary`에는 "실제 민감도는 검증되지 않았다", "추가 사실로 확장하지
+않는다", "특정 상품의 판단은 포함하지 않는다" 같은 반복 면책 문구를 쓰지 않는다.
+Profile에 이미 존재하는 정보를 사람이 읽기 좋은 문장으로 푸는 수준으로 제한하며,
+새로운 외부 사실을 추가하지 않는다.
 
 ---
 
@@ -657,55 +730,96 @@ Prompt에 다음 규칙을 포함한다.
 app/streamlit_app.py
 ```
 
-## Required Sections
+## Required Section Order
 
-### Section 1 — What's Trending?
-
-Signal Selector:
+Company Impact가 스크롤 없이 화면 상단에서 보이도록 아래 순서를 지킨다.
 
 ```text
-[미국 장기금리 급락 ▼]
+1. Brand bar          로고 + PROTOTYPE / SNAPSHOT MODE badge
+2. Demo 고지 + Provenance legend
+3. Signal Selector    segmented control: [ 금리 ↓ ] [ VIX ↑ ] [ USD/KRW ↑ ]
+4. What's Trending?   headline + metric chip / weekly change(hero) / z-score / direction
+5. AI Trend Summary   trend_summary 1~2문장
+6. Company Impact     3-column 카드
+7. What to Watch      회사별 watchpoints (없으면 key_metrics)
+8. Why Did It Move?   핵심 원인 3개 (causes)
+9. Evidence           Snapshot 5건, 기본 접힘
+10. 이 화면의 AI 사용 범위  분석 모드·모델·생성 범위 고지, 기본 접힘
 ```
 
-표시:
+Streamlit 기본 상단 헤더 바는 숨긴다. 콘텐츠 위에 겹쳐 떠서 brand bar를 가린다.
 
-- metric
-- weekly change
-- z-score
-- direction
+## Provenance Contract
 
-### Section 2 — Why Did It Move?
-
-Evidence 최소 3개.
-
-각 항목:
-
-- title
-- source
-- date
-- excerpt
-- URL
-
-### Section 3 — Company Impact
-
-3-column:
+화면의 모든 블록은 생성 주체를 표시한다. 상단 legend와 섹션 헤더 마커, 카드 내부
+마커로 일관되게 노출한다.
 
 ```text
-한화생명 | 한화투자증권 | 한화자산운용
+Snapshot      Signal 수치, headline          고정 합성 데이터
+검색 선별      Evidence 5건                   BM25 + RRF (LLM 아님)
+Profile 기준   relevance, direction, 요인,     Company Profile
+              transmission paths, metrics,
+              watchpoints
+AI 생성        trend_summary, causes,          LLM
+              impact_summary, insight
 ```
 
-각 카드:
+`metadata.analysis_mode`(`cached_llm_output` / `live_llm`)를 화면에 실제로 노출한다.
+`cached_llm_output`은 사전 생성 후 검증된 출력이며 실시간 생성이 아니라는 점을 명시한다.
 
-- relevance
-- direction
-- transmission paths
-- insight
+마커에는 brand orange를 쓰지 않는다. Orange accent 예산은 §Visual Identity가 정한
+용도로만 쓴다.
+
+## Stat Tile Contract
+
+- Hero figure는 화면 전체에서 **정확히 하나**(Weekly Change)만 둔다.
+- `metric`은 측정값이 아니라 개체 이름이므로 value가 아닌 eyebrow chip으로 표시한다.
+- Direction에 빨강·초록을 쓰지 않는다. 좋고 나쁨을 색으로 부여하면 투자 판단 신호가
+  되어 `investment_advice: false` 원칙과 충돌한다. 화살표 + 중립 잉크로 표시한다.
+
+### Company Impact 카드 구성
+
+```text
+회사명                        [RELEVANCE][DIRECTION]  ← 작게. 카드의 핵심처럼 보이지 않게
+한 줄 impact_summary                    [AI]          ← 카드에서 가장 눈에 띄는 문장
+──────────────────────────────────────────
+영향 요인                            [PROFILE]
+＋ positive_factors
+－ negative_factors                                   ← 라벨 2개 대신 부호 마커 한 블록
+TRANSMISSION PATHS  〈chip〉〈chip〉〈chip〉
+KEY METRICS TO WATCH 〈chip〉〈chip〉                   ← 짧은 명사구는 chip
+──────────────────────────────────────────
+INSIGHT                                  [AI]         ← 카드 하단 고정(3장 정렬)
+```
+
+＋/－에 빨강·초록을 쓰지 않는다. 부호와 문장이 이미 방향을 전달하며, 색으로 좋고 나쁨을
+부여하면 투자 판단 신호가 된다.
+
+회사별 차이는 factor와 transmission path에서 즉시 드러나야 하며,
+`direction` 값을 억지로 바꿔 차이를 만들지 않는다.
+
+### Evidence
+
+기본 접힘 상태(`st.expander`)로 표시한다. Snapshot 데이터라는 사실 자체는 숨기지 않되
+카드마다 면책 문구를 반복하지 않는다. `demo://` URL은 사용자에게 의미가 없으므로
+링크로 노출하지 않고 `document_id`만 caption에 표기한다.
+
+각 항목: title / source / date / document_id / excerpt.
 
 ## Important
 
 Multi-page는 구현하지 않는다.
 
 한 페이지로 충분하다.
+
+## Visual Identity
+
+- Hanwha Orange `#F57E20`: 선택된 Signal, 핵심 숫자, badge 일부, 카드 상단 accent
+- Dark Charcoal `#2B2B2B`: 제목 및 본문
+- Warm Light Gray `#F7F5F3`: AI Trend Summary 배경
+- White `#FFFFFF`: 전체 배경
+
+Orange는 전체 UI의 약 10~15% 수준 accent로만 사용한다.
 
 ---
 
@@ -791,21 +905,44 @@ Day 3 이후 신규 핵심 기능 추가 금지.
 
 ---
 
-## Day 4 — Feedback Response
+## Day 4 — Feedback Response (완료: Option C + D)
 
-피드백에 따라 아래 중 하나만 강화한다.
+기능을 늘리지 않고 판단 정합성·표현력·정보 구조를 개선했다.
 
-### Option A
-실제 RSS Collector
+- relevance / direction의 Source of Truth를 Company Profile로 이관 (§7, §12)
+- Company Profile exposure에 positive/negative factors, key_metrics, watchpoints 추가
+- cached insight에서 반복 면책 문구 제거, `impact_summary` 추가
+- Dashboard 정보 구조 재설계 — Company Impact를 Evidence 위로, Evidence는 접힘 (§14)
+- AI Trend Summary / What to Watch 섹션 추가
+- Hanwha 색상 체계 적용
 
-### Option B
-실제 Market Data + z-score
+---
 
-### Option C
-Company Profile 정교화
+# 15-A. 구현 범위 (Implemented vs Future)
 
-### Option D
-UI 개선
+문서와 구현의 정합성을 위해 아래를 명확히 구분한다.
+
+## 현재 구현됨
+
+- Sample / Snapshot Signal (3종: `interest_rate` / `volatility` / `fx`)
+- Trend Retrieval (Snapshot corpus 26건, BM25 + RRF, 회사 필터 없음)
+- Evidence 표시 (5건, `data_mode = demo_snapshot`)
+- Company Profile Mapping (relevance / direction / factors / paths / metrics / watchpoints 주입)
+- Structured AI Insight (cached LLM output + live Groq path)
+- Streamlit Dashboard (단일 페이지)
+
+## 향후 확장 (미구현)
+
+- 실제 최신 데이터 자동수집
+- RSS / API / FRED / ECOS 연동
+- Signal Threshold 기반 Trigger Alert
+- 담당부서 Routing
+- PDF Brief 생성
+- Real-time update
+- Trend Detail 페이지
+
+위 "향후 확장" 항목은 현재 저장소에 코드가 존재하지 않는다. 문서·데모·리포트에서
+구현된 기능처럼 서술하지 않는다.
 
 ---
 
@@ -824,6 +961,10 @@ UI 개선
 - [ ] Evidence 최소 3개 표시
 - [ ] 한화 금융계열사 3개 모두 표시
 - [ ] 각 계열사 transmission path 표시
+- [ ] Company Impact가 Evidence보다 위에 표시
+- [ ] Evidence는 기본 접힘
+- [ ] 각 카드에 positive/negative factors 및 key metrics 표시
+- [ ] relevance / direction이 Profile 값과 일치
 - [ ] JSON parsing error 없음
 
 ## C. Reliability

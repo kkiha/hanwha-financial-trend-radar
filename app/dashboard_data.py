@@ -4,37 +4,56 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
+from rag_finance.profiles.loader import apply_profile_exposure, load_company_profiles
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 COMPANY_ORDER = ("한화생명", "한화투자증권", "한화자산운용")
+PROFILE_DIR = "profiles"
 
 SIGNAL_CATALOG: dict[str, dict[str, str]] = {
     "US10Y_SAMPLE": {
         "label": "미국 장기금리 급락",
+        "short_label": "금리 ↓",
         "signal_path": "data/sample_signals/us10y_drop.json",
         "cache_path": "data/demo_outputs/us10y_sample_analysis.json",
         "evidence_path": "data/demo_evidence/us10y_sample_evidence.json",
     },
     "VIX_SPIKE": {
         "label": "VIX 급등과 Risk-off 확산",
+        "short_label": "VIX ↑",
         "signal_path": "data/sample_signals/vix_spike.json",
         "cache_path": "data/demo_outputs/vix_spike_analysis.json",
         "evidence_path": "data/demo_evidence/vix_spike_evidence.json",
     },
     "USDKRW_MOVE": {
         "label": "USD/KRW 급등과 원화 약세",
+        "short_label": "USD/KRW ↑",
         "signal_path": "data/sample_signals/usdkrw_move.json",
         "cache_path": "data/demo_outputs/usdkrw_move_analysis.json",
         "evidence_path": "data/demo_evidence/usdkrw_move_evidence.json",
     }
 }
 
+COMPANY_LIST_FIELDS = (
+    "positive_factors",
+    "negative_factors",
+    "transmission_paths",
+    "key_metrics",
+    "watchpoints",
+)
+
 
 def _empty_company() -> dict[str, Any]:
     return {
         "relevance": "정보 없음",
         "direction": "정보 없음",
+        "impact_summary": "",
         "transmission_paths": [],
+        "positive_factors": [],
+        "negative_factors": [],
+        "key_metrics": [],
+        "watchpoints": [],
         "insight": "분석 결과가 없습니다.",
     }
 
@@ -54,6 +73,15 @@ def _read_json(path: Path, errors: list[str], label: str) -> dict[str, Any]:
     return payload
 
 
+def _read_profiles(project_root: Path, errors: list[str]) -> dict[str, dict[str, Any]]:
+    """Load Company Profiles, degrading to an empty mapping so the demo never crashes."""
+    try:
+        return load_company_profiles(project_root / PROFILE_DIR)
+    except (OSError, ValueError, RuntimeError) as exc:
+        errors.append(f"Company Profile을 읽을 수 없습니다: {exc}")
+        return {}
+
+
 def available_signal_ids(catalog: Mapping[str, Mapping[str, str]] | None = None) -> list[str]:
     return list((catalog or SIGNAL_CATALOG).keys())
 
@@ -61,6 +89,11 @@ def available_signal_ids(catalog: Mapping[str, Mapping[str, str]] | None = None)
 def signal_label(signal_id: str, catalog: Mapping[str, Mapping[str, str]] | None = None) -> str:
     entry = (catalog or SIGNAL_CATALOG).get(signal_id, {})
     return str(entry.get("label") or signal_id)
+
+
+def signal_short_label(signal_id: str, catalog: Mapping[str, Mapping[str, str]] | None = None) -> str:
+    entry = (catalog or SIGNAL_CATALOG).get(signal_id, {})
+    return str(entry.get("short_label") or entry.get("label") or signal_id)
 
 
 def load_dashboard_payload(
@@ -113,13 +146,27 @@ def load_dashboard_payload(
         companies[company] = dict(impact) if isinstance(impact, dict) else _empty_company()
         companies[company].setdefault("relevance", "정보 없음")
         companies[company].setdefault("direction", "정보 없음")
-        if not isinstance(companies[company].get("transmission_paths"), list):
-            companies[company]["transmission_paths"] = []
+        companies[company].setdefault("impact_summary", "")
+        for field in COMPANY_LIST_FIELDS:
+            if not isinstance(companies[company].get(field), list):
+                companies[company][field] = []
         companies[company].setdefault("insight", "분석 결과가 없습니다.")
+
+    # relevance/direction and the exposure factor lists are Profile-owned. The
+    # dashboard reads cached JSON directly, so it injects them the same way
+    # analyze_trend() does for the CLI and live paths.
+    profiles = _read_profiles(root, errors)
+    if profiles:
+        apply_profile_exposure(companies, profiles, signal.get("category"))
+
+    trend_summary = analysis_data.get("trend_summary")
+    causes = analysis_data.get("causes")
 
     return {
         "signal_id": signal_id,
         "signal": signal,
+        "trend_summary": trend_summary if isinstance(trend_summary, str) else "",
+        "causes": [str(cause) for cause in causes] if isinstance(causes, list) else [],
         "evidence": evidence,
         "companies": companies,
         "metadata": {

@@ -1,3 +1,14 @@
+[theme]
+# Light is fixed: cards and surfaces are white-only, so following the OS dark
+# preference would mix an unreadable Streamlit chrome with our palette.
+base = "light"
+# Widgets render white text on primaryColor, so this is the accessible orange
+# (#B85C00, 4.60:1 on white). The brand orange #F57E20 is used for marks only.
+primaryColor = "#B85C00"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F7F5F3"
+textColor = "#23272B"
+
 [browser]
 gatherUsageStats = false
 

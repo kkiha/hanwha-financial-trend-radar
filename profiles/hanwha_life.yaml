@@ -6,19 +6,75 @@
     "interest_rate": {
       "relevance": "high",
       "direction": "mixed",
-      "transmission_paths": ["채권 운용", "신규 재투자수익률", "ALM"],
+      "positive_factors": [
+        "보유 채권 평가환경 개선"
+      ],
+      "negative_factors": [
+        "신규 재투자수익률 하락",
+        "ALM 관점의 자산·부채 듀레이션 부담"
+      ],
+      "transmission_paths": [
+        "채권 운용",
+        "신규 재투자수익률",
+        "ALM"
+      ],
+      "key_metrics": [
+        "운용수익률",
+        "ALM 관련 지표"
+      ],
+      "watchpoints": [
+        "신규 투자수익률 변화",
+        "자산·부채 듀레이션 갭"
+      ],
       "source_status": "TODO_VERIFY"
     },
     "volatility": {
       "relevance": "high",
       "direction": "negative",
-      "transmission_paths": ["투자자산 변동성", "자본관리", "리스크 관리"],
+      "positive_factors": [],
+      "negative_factors": [
+        "투자자산 평가 변동성 확대",
+        "자본관리 부담 증가",
+        "리스크 관리 대응 부담"
+      ],
+      "transmission_paths": [
+        "투자자산 변동성",
+        "자본관리",
+        "리스크 관리"
+      ],
+      "key_metrics": [
+        "투자자산 변동성",
+        "자본 관련 지표"
+      ],
+      "watchpoints": [
+        "변동성 확대 지속 여부",
+        "리스크 관리 대응 강도"
+      ],
       "source_status": "TODO_VERIFY"
     },
     "fx": {
       "relevance": "high",
       "direction": "mixed",
-      "transmission_paths": ["해외자산 평가", "환헤지", "외화 익스포저"],
+      "positive_factors": [
+        "해외자산의 원화 환산 평가 개선"
+      ],
+      "negative_factors": [
+        "환헤지 비용 상승 부담",
+        "외화 익스포저 변동성 확대"
+      ],
+      "transmission_paths": [
+        "해외자산 평가",
+        "환헤지",
+        "외화 익스포저"
+      ],
+      "key_metrics": [
+        "해외자산 평가손익",
+        "환헤지 비용"
+      ],
+      "watchpoints": [
+        "환헤지 조건 변화",
+        "외화 익스포저 규모"
+      ],
       "source_status": "TODO_VERIFY"
     }
   }

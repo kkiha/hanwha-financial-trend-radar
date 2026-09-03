@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from rag_finance.profiles.loader import apply_profile_exposure
 from rag_finance.signal.schema import Evidence, Signal
 
 
@@ -32,9 +33,10 @@ def build_trend_messages(
 Company Profile에 없는 사업구조를 만들지 마라.
 source_status가 TODO_VERIFY인 항목은 제한된 Prototype 가정이며 사실처럼 확장하지 마라.
 Evidence에 없는 사건과 숫자를 만들지 마라.
-복합 영향은 MIXED를 사용하고 투자 추천이나 매수·매도 의견을 쓰지 마라.
-근거가 부족하면 trend_summary 또는 insight에 그 한계를 명시하라.
-relevance는 HIGH/MEDIUM/LOW, direction은 POSITIVE/NEGATIVE/MIXED/NEUTRAL만 사용하라.
+투자 추천이나 매수·매도 의견을 쓰지 마라.
+relevance와 direction은 시스템이 Company Profile에서 직접 주입하므로 생성하지 마라.
+Profile의 positive_factors와 negative_factors를 근거로 해석 문장을 작성하라.
+impact_summary는 회사별 차이가 드러나는 한 문장으로 쓰고 insight는 두세 문장으로 풀어라.
 companies에는 한화생명, 한화투자증권, 한화자산운용을 모두 포함하라."""
     contract = {
         "signal": {
@@ -48,8 +50,7 @@ companies에는 한화생명, 한화투자증권, 한화자산운용을 모두 �
         "causes": ["string"],
         "companies": {
             company: {
-                "relevance": "HIGH|MEDIUM|LOW",
-                "direction": "POSITIVE|NEGATIVE|MIXED|NEUTRAL",
+                "impact_summary": "string",
                 "transmission_paths": ["profile에 존재하는 string"],
                 "insight": "string",
             }
@@ -106,14 +107,18 @@ def validate_structured_analysis(payload: Mapping[str, Any]) -> dict[str, Any]:
         impact = companies.get(company)
         if not isinstance(impact, dict):
             raise ValueError(f"Structured analysis missing company: {company}")
-        if impact.get("relevance") not in RELEVANCE_VALUES:
+        # relevance/direction are Profile-owned and injected after validation. They
+        # are only checked when a payload still carries them.
+        if "relevance" in impact and impact["relevance"] not in RELEVANCE_VALUES:
             raise ValueError(f"Invalid relevance for {company}: {impact.get('relevance')}")
-        if impact.get("direction") not in DIRECTION_VALUES:
+        if "direction" in impact and impact["direction"] not in DIRECTION_VALUES:
             raise ValueError(f"Invalid direction for {company}: {impact.get('direction')}")
         if not isinstance(impact.get("transmission_paths"), list):
             raise ValueError(f"transmission_paths must be a list for {company}")
         if not isinstance(impact.get("insight"), str):
             raise ValueError(f"insight must be text for {company}")
+        if "impact_summary" in impact and not isinstance(impact["impact_summary"], str):
+            raise ValueError(f"impact_summary must be text for {company}")
     return result
 
 
@@ -188,6 +193,9 @@ def analyze_trend(
     if result["signal"].get("category") != signal.category:
         raise ValueError("Analysis signal category does not match the input signal")
     _validate_profile_grounding(result, profiles, signal.category)
+    # Single injection point shared by the cached and live paths: relevance,
+    # direction and the exposure factor lists always come from the Company Profile.
+    apply_profile_exposure(result["companies"], profiles, signal.category)
 
     result["evidence"] = [item.to_dict() for item in evidence]
     result["metadata"] = {
