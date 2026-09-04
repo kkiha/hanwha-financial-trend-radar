@@ -61,8 +61,12 @@ python -m unittest discover -s tests -t .
 생성 시각과 최근 갱신 시도의 시각·성공 여부를 분리해 보여줍니다. 최근 시도 상태와 안전한
 LLM 진단 정보는 `data/live/latest_refresh.json`에 기록됩니다.
 회사 관련성 결과는 트렌드 파일과 분리된
-`data/live/latest_company_relevance.json`에 저장됩니다. 관련성 분류만 실패하면 새 트렌드는
-유지되고 관련성 파일은 `UNCLASSIFIED` 상태로 남습니다.
+`data/live/latest_company_relevance.json`에 저장됩니다. 3사를 순차 호출한 뒤, 한 회사가
+검증에 실패해도 이미 성공한 다른 회사의 결과까지 버리지 않습니다 — 상태는 3사 모두 성공하면
+`CLASSIFIED`, 일부만 성공하면 `PARTIAL`(성공한 회사만 evaluations에 포함), 전부 실패하면
+`UNCLASSIFIED`입니다. Brief 생성 단계도 관련성이 `CLASSIFIED` 또는 `PARTIAL`이면 진행하며,
+관련성이 없는 회사는 결과 배열에서 자연히 빠지고 UI가 이를 "생성 결과에 데이터가 없습니다"로
+안내합니다.
 회사별 Brief는 `data/live/latest_company_briefs.json`에 별도로 저장되며, Brief 생성만
 실패하면 트렌드와 관련성 결과를 유지합니다.
 
@@ -108,6 +112,23 @@ LLM은 기사를 3개 주제로 묶고 한국어 요약 문장을 씁니다. **�
 
 관련 업무는 장문 분석이 아니라 정해진 목록 안의 짧은 태그로만 표시하며, 목록 밖의 태그는
 제거합니다.
+
+## UI 목업 (`ui_mockup/`)
+
+팀원이 실제 Python/Streamlit 프로젝트를 실행하지 않고도 디자인만 자유롭게 수정할 수 있도록,
+현재 화면 구조를 그대로 옮긴 standalone HTML을 별도로 두었습니다.
+
+```
+ui_mockup/
+  ui-mockup.html      더블클릭으로 바로 열리는 정적 HTML (서버·Python 불필요)
+  assets/hanwha_logo.png
+```
+
+CSS·JS는 전부 파일 내부에 있고 외부 CDN·npm 의존성이 없습니다. 데이터는 backend와 연결되지
+않은 정적 샘플이며, Company Intelligence 탭은 Main Brief만 있는 경우 / Monitoring만 있는
+경우 / 둘 다 있는 경우 세 가지 상태를 각각 다른 회사에 담아 한 화면에서 비교할 수 있게
+했습니다. 이 파일을 고치는 것은 실제 앱 코드(`app/trend_feed_app.py`)에 영향을 주지 않으며,
+반대로 실제 앱 코드를 고쳐도 이 목업은 자동으로 갱신되지 않습니다.
 
 ---
 

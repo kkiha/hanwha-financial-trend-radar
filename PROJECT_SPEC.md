@@ -3,6 +3,25 @@
 
 ---
 
+> **⚠ ARCHIVED — 이 문서는 Signal Radar(`app/streamlit_app.py`) 단계의 계획 문서다.**
+>
+> 프로젝트는 이후 **Hanwha Global Finance Radar**(`app/trend_feed_app.py`)로 다시
+> 확장됐다 — 실제 RSS 자동수집, Groq 트렌드 군집화, Runtime Company Profile 기반
+> 회사 관련성 분류, 회사별 Company Intelligence Brief까지 포함한다. 이 아래 내용
+> (Day 1~4 빌드 플랜, Business Lens, Scope Guardrail 등)은 **그 이전 단계의 기록으로
+> 보존**하며, 지금 무엇이 구현돼 있는지는 이 문서가 아니라 다음을 기준으로 삼는다.
+>
+> - [`README.md`](README.md) — 두 앱 모두의 현재 실행 방법과 구현 범위
+> - [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md) — Company Intelligence
+>   파이프라인의 원칙과 진행 로그 (날짜별 append)
+> - [`FEEDBACK_GUIDE.md`](FEEDBACK_GUIDE.md) / [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) —
+>   현재 메인 프로덕트 기준 데모·피드백 가이드
+>
+> Signal Radar 자체는 삭제되지 않았고 `streamlit run app/streamlit_app.py`로 계속
+> 실행할 수 있다. 아래 내용을 새 기능 판단 근거로 쓰지 말 것.
+
+---
+
 # 0. Executive Summary
 
 이 문서는 Claude Code 또는 Codex가 **추가 설명 없이도 프로젝트 맥락을 이해하고, 기존 `rag-finance`를 기반으로 3일 내 피드백 가능한 Prototype을 구현하도록 하기 위한 자급자족형 작업 명세서**다.

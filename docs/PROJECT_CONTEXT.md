@@ -38,12 +38,19 @@ RSS 수집 → 중복 제거 → 주요 트렌드 추출 → 회사 관련성 �
 - 회사별 Main Brief 후보와 Monitoring Item의 결정론적 선정
 - 선정된 Main Brief 문장만 Groq로 생성하고 검증된 태그·근거·통계를 코드로 결합
 - `data/live/latest_company_briefs.json` 별도 안전 저장
+- 관련성·Brief 모두 회사별 부분 실패(`PARTIAL`) 지원 — 한 회사 실패가 나머지 회사 결과를 막지 않음
+- `app/trend_feed_app.py`에 Company Intelligence 탭 UI 구현 (한화생명 → 한화투자증권 →
+  한화자산운용 순서, Main Brief 카드 + Monitoring 목록 + 상태별 안내 문구)
+- 팀 디자인 공유용 standalone HTML 목업 `ui_mockup/ui-mockup.html` 추가
 
 남은 TODO:
 
-1. 현재 UI에 회사별 탭과 근거 기사 표시
-2. 실데이터 기반 최종 QA
-3. 발표용 실제 기사 Snapshot 준비
+1. 실데이터 기반 최종 QA (특히 아래 "주체 귀속" 품질 항목의 라이브 재검증)
+2. 발표용 실제 기사 Snapshot 준비
+
+완료됨(2026-09-04): 회사별 탭·근거 기사 UI는 `app/trend_feed_app.py`의
+`_render_company_intelligence()`로 구현·테스트 완료. `tests/test_trend_feed_company_ui.py`
+참고. 이 파일 자체를 회사별 subset으로 다시 여는 관련성 조회는 하지 않았다.
 
 원본 리서치 보고서는 프로필을 작성·검증하기 위한 근거 자료다. Runtime Profile은 그중 런타임 판정에 필요한 사업 영역, 감시 주제, 검색어, 제외 규칙만 정제한 실행 입력이다.
 
@@ -63,7 +70,7 @@ RSS 수집 → 중복 제거 → 주요 트렌드 추출 → 회사 관련성 �
 
 관련성 분류는 회사별로 해당 회사 프로필 하나와 트렌드 3건만 전달한다. 각 트렌드의 모델 입력 기사는 최대 3건이며, 서로 다른 출처를 먼저 확보한 뒤 최신 발행시각, 유효한 요약 존재 여부, `article_id` 순으로 결정론적으로 선택한다. 기사 입력은 ID·제목·출처·발행시각·160자 요약·후보 회사·감시주제만 남긴다. 프로필은 회사 ID·이름·요약, 사업영역 ID·이름, 감시주제 ID·이름·전이경로, 업무 태그와 제외 규칙만 남긴다. 원본 트렌드와 전체 기사 registry는 변경하지 않는다.
 
-각 회사는 API·파싱·검증 오류에 대해 최대 두 번 시도한다. 429는 `retry-after`를 우선하며 한 번의 대기는 최대 30초로 제한한다. 413은 같은 요청을 반복하지 않는다. 한 회사가 실패해도 다른 회사 호출은 계속하고 이미 성공한 회사를 다시 호출하지 않지만, 하나라도 최종 실패하면 불완전한 평가를 공개하지 않고 전체를 `UNCLASSIFIED`로 저장한다. 회사별 상태·시도 횟수·입력 문자 수·대표 기사 수·감시주제 수·출력 예약 토큰·대기시간만 진단 정보로 남긴다.
+각 회사는 API·파싱·검증 오류에 대해 최대 두 번 시도한다. 429는 `retry-after`를 우선하며 한 번의 대기는 최대 30초로 제한한다. 413은 같은 요청을 반복하지 않는다. 한 회사가 실패해도 다른 회사 호출은 계속하고 이미 성공한 회사를 다시 호출하지 않는다. 모든 회사가 성공하면 `CLASSIFIED`, 일부만 성공하면 `PARTIAL`(성공한 회사의 evaluations만 포함, 실패한 회사명은 error.message에 명시), 전부 실패하면 `UNCLASSIFIED`로 저장한다. Brief 생성은 관련성이 `CLASSIFIED` 또는 `PARTIAL`이면 진행하며, 완전성 검사는 요청한 전체 회사가 아니라 실제로 관련성이 존재하는 회사에만 적용한다(2026-09-04 수정, `rag_finance/llm/company_relevance.py`·`company_brief.py`). 회사별 상태·시도 횟수·입력 문자 수·대표 기사 수·감시주제 수·출력 예약 토큰·대기시간만 진단 정보로 남긴다.
 
 Main Brief는 `high`이면서 근거 수준이 `strong` 또는 `moderate`인 평가 중 회사별 최대 2건이다. `medium`과 `high + limited`는 Groq를 거치지 않는 Monitoring Item으로 회사별 최대 2건을 구성한다. `low`와 `none`은 모두 제외하며, Main 후보가 없는 회사를 억지로 채우지 않는다.
 
@@ -110,3 +117,34 @@ python -m scripts.refresh_trend_feed --skip-llm --source-mode both
 
 python -m unittest discover -s tests -t .
 ```
+
+## 2026-09-04 관련성 배치 all-or-nothing 수정 + UI 반영
+
+실사용 중 "왜 한화생명뿐 아니라 세 회사 전부 Brief가 안 뜨는가"라는 질문으로 원인이
+드러났다. `classify_company_relevance()`가 3사를 순차 호출한 뒤 단 한 회사라도 검증에
+실패하면 `merged_evaluations` 전체를 버리고 `UNCLASSIFIED`를 반환하고 있었다. 이미 성공한
+2개 회사 결과까지 함께 사라졌고, `company_brief.py`는 `status != "CLASSIFIED"`만 보는
+게이트라 Brief 생성 자체가 통째로 막혔다. 재현 결과 원인은 rate limit이 아니라 모델이
+`relevance: "none"` 평가에서 이따금 `reason_ko`를 한글 없이 비워 반환하는 비결정적 오류였다
+— 동일 요청을 독립적으로 3회 더 재현했을 때는 모두 정상 출력됐다.
+
+수정: 실패한 회사만 결과에서 제외하고 성공한 회사는 그대로 살린다. 상태는
+`CLASSIFIED`(전원 성공) / `PARTIAL`(일부 성공, 실패 회사명을 `error.message`에 명시) /
+`UNCLASSIFIED`(전원 실패) 3단계다. `validate_brief_prerequisites`의 완전성 검사도 전체
+프로필이 아니라 `covered_company_ids`(실제 관련성이 존재하는 회사)로 스코프를 좁혔다.
+실패한 회사는 최종 `companies` 배열에서 자연히 빠지며, 이미 구현된 UI 로더
+(`build_company_intelligence`)가 이를 "생성 결과에 데이터가 없습니다"로 정확히 표시한다 —
+generation과 UI 양쪽을 고칠 필요가 없었다.
+
+테스트: `tests/test_company_relevance.py`(기존 3개 재작성 + all-fail 케이스 1개 추가),
+`tests/test_company_brief.py`(+3, 완전성 스코핑 2개 + end-to-end partial 1개). 전체
+스위트 179개 통과. 실 API로 재실행했을 때는 우연히 3사 모두 성공(`CLASSIFIED`, Main 1건 +
+Monitoring 3건)해 PARTIAL 경로 자체는 라이브에서 재현되지 않았지만, 결정론적 픽스처로
+전체 분기를 검증했다.
+
+같은 세션에서 Company Intelligence 탭 UI(`_render_company_intelligence` 등)를
+`app/trend_feed_app.py`에 구현하고 실데이터로 렌더 확인까지 마쳤다(예외 0건, 실제 Brief
+카드·Monitoring 행 렌더 확인). 이어서 팀 디자인 공유용 standalone HTML 목업
+(`ui_mockup/ui-mockup.html`)을 별도로 만들었다 — 실제 Python 코드와 독립적이며, 세 회사
+탭에 Main Brief만/Monitoring만/둘 다 있는 세 가지 상태를 각각 배치해 디자이너가 한 화면에서
+비교할 수 있게 했다.
