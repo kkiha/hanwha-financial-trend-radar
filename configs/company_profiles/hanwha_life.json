@@ -1,0 +1,259 @@
+{
+  "schema_version": "1.0",
+  "company_id": "hanwha_life",
+  "company_name": "한화생명",
+  "profile_updated_at": "2026-09-03",
+  "profile_summary": [
+    "종신·건강보험 중심의 신계약 CSM과 보험손익이 핵심 영업 축이다.",
+    "국내채권 비중이 높은 자산운용과 장기 보험부채 때문에 ALM·K-ICS 변화가 중요하다.",
+    "대형 GA 판매채널과 판매수수료 규제가 신계약 성장·유지율·사업비에 연결된다.",
+    "인도네시아 보험·은행 연계와 보험 영업 AI는 차별적인 성장 감시영역이다."
+  ],
+  "business_areas": [
+    {
+      "id": "life_insurance",
+      "name": "생명보험",
+      "description": "종신·건강보험을 중심으로 신계약 CSM과 장기 보험손익을 창출한다.",
+      "source_ids": ["S2", "S4"]
+    },
+    {
+      "id": "insurance_asset_management",
+      "name": "보험 자산운용",
+      "description": "국내채권·해외증권·대출채권을 운용하며 투자손익과 자본건전성에 영향을 준다.",
+      "source_ids": ["S2", "S4"]
+    },
+    {
+      "id": "ga_distribution",
+      "name": "GA·보험판매",
+      "description": "한화생명금융서비스 등 대형 설계사 채널을 통해 보험상품을 판매한다.",
+      "source_ids": ["S1", "S5"]
+    },
+    {
+      "id": "retirement_senior",
+      "name": "퇴직연금·시니어보험",
+      "description": "퇴직연금과 치매·간병보험을 통해 노후자산 및 고령화 수요에 대응한다.",
+      "source_ids": ["S9", "S10"]
+    },
+    {
+      "id": "overseas_finance",
+      "name": "해외 보험·금융",
+      "description": "베트남·인도네시아 보험법인과 Nobu Bank를 통해 해외 금융사업을 운영한다.",
+      "source_ids": ["S1", "S6"]
+    },
+    {
+      "id": "insurance_ai",
+      "name": "보험 AI·디지털",
+      "description": "FP 영업지원과 금융 AI 연구·파트너십을 중심으로 디지털 전환을 추진한다.",
+      "source_ids": ["S7", "S8"]
+    }
+  ],
+  "revenue_drivers": [
+    {
+      "id": "new_business_csm",
+      "name": "신계약 CSM",
+      "description": "종신·건강보험의 판매량, 상품 수익성, 유지율과 계리가정이 미래 보험이익 기반을 결정한다.",
+      "source_ids": ["S2", "S4"]
+    },
+    {
+      "id": "insurance_service_profit",
+      "name": "보험손익",
+      "description": "보유계약 CSM 상각과 보험금·사업비 경험조정이 보험손익에 영향을 준다.",
+      "source_ids": ["S2", "S4"]
+    },
+    {
+      "id": "investment_profit",
+      "name": "투자손익",
+      "description": "채권·해외증권·대출채권의 이자, 평가, 처분 및 신용비용이 투자손익을 움직인다.",
+      "source_ids": ["S2", "S4"]
+    },
+    {
+      "id": "distribution_productivity",
+      "name": "판매채널 생산성",
+      "description": "설계사 생산성·정착률·유지율과 판매수수료가 신계약 성장 및 사업비에 연결된다.",
+      "source_ids": ["S5", "S13", "S14"]
+    },
+    {
+      "id": "overseas_earnings",
+      "name": "해외 금융손익",
+      "description": "해외 보험법인과 인도네시아 은행 투자의 성장·건전성이 연결 실적을 다변화한다.",
+      "source_ids": ["S1", "S6"]
+    }
+  ],
+  "strategic_priorities": [
+    {
+      "id": "profitable_protection",
+      "name": "보장성보험 중심 수익성 강화",
+      "status": "active",
+      "signals": ["신계약 CSM", "종신·건강보험 상품 믹스", "유지율·계리가정"],
+      "source_ids": ["S2", "S4"]
+    },
+    {
+      "id": "ga_strengthening",
+      "name": "GA 판매플랫폼 강화",
+      "status": "active",
+      "signals": ["설계사 생산성", "판매수수료 개편", "비교설명의무"],
+      "source_ids": ["S1", "S5", "S13", "S14"]
+    },
+    {
+      "id": "indonesia_platform",
+      "name": "인도네시아 종합금융 플랫폼",
+      "status": "active",
+      "signals": ["Nobu Bank", "방카슈랑스", "OJK 규제"],
+      "source_ids": ["S1", "S6"]
+    },
+    {
+      "id": "insurance_ai_adoption",
+      "name": "보험 영업 AI 적용",
+      "status": "active",
+      "signals": ["FP 영업지원", "AI 위험관리", "금융 AI 보안"],
+      "source_ids": ["S7", "S8", "S15"]
+    },
+    {
+      "id": "senior_lifecare",
+      "name": "시니어·치매·간병 시장 대응",
+      "status": "emerging",
+      "signals": ["치매·간병보험", "장기요양정책", "통합돌봄"],
+      "source_ids": ["S10", "S16"]
+    }
+  ],
+  "risk_factors": [
+    {
+      "id": "alm_capital_risk",
+      "name": "ALM·자본건전성",
+      "transmission": "초장기금리와 보험부채 할인율 변화가 자산·부채 가치, 듀레이션갭과 K-ICS를 동시에 움직인다.",
+      "source_ids": ["S11", "S12"]
+    },
+    {
+      "id": "actuarial_assumption_risk",
+      "name": "IFRS17 계리가정",
+      "transmission": "해지율·손해율 등 계리가정과 상품 규율 변화가 CSM 및 보험손익에 영향을 준다.",
+      "source_ids": ["S11"]
+    },
+    {
+      "id": "distribution_regulation_risk",
+      "name": "GA·판매수수료 규제",
+      "transmission": "수수료 분급과 비교설명의무가 설계사 생산성, 신계약과 유지율에 영향을 줄 수 있다.",
+      "source_ids": ["S13", "S14"]
+    },
+    {
+      "id": "credit_market_risk",
+      "name": "신용·시장 위험",
+      "transmission": "신용스프레드 확대와 대출 부실은 투자자산 가치, 신용비용과 요구자본을 악화시킬 수 있다.",
+      "source_ids": ["S2", "S4"]
+    },
+    {
+      "id": "overseas_regulatory_risk",
+      "name": "해외 금융·환율 위험",
+      "transmission": "인도네시아·베트남 규제, 현지 금융건전성과 환율 변화가 해외법인 및 연결손익에 전이된다.",
+      "source_ids": ["S1", "S6"]
+    },
+    {
+      "id": "ai_governance_risk",
+      "name": "AI 거버넌스·보안",
+      "transmission": "보험상담과 영업지원 AI 확대가 모델위험, 고객정보 보호와 보안통제 요구를 높인다.",
+      "source_ids": ["S15"]
+    }
+  ],
+  "watch_topics": [
+    {
+      "id": "life_alm_kics",
+      "name": "보험사 ALM·K-ICS",
+      "why_it_matters": "장기 보험부채와 국내채권 중심 운용구조 때문에 자본과 투자손익에 직접 연결된다.",
+      "related_business_ids": ["insurance_asset_management"],
+      "transmission": "초장기금리·할인율·듀레이션갭 변화가 자산·부채 가치와 K-ICS에 영향을 준다.",
+      "importance_criteria": ["보험부채 할인율 또는 듀레이션 규정 변경", "보험사 장기채 수요 변화", "기본자본 K-ICS 또는 자본조달 변화"],
+      "source_ids": ["S11", "S12"]
+    },
+    {
+      "id": "life_csm_ifrs17",
+      "name": "CSM·IFRS17 상품 수익성",
+      "why_it_matters": "종신·건강보험 중심의 신계약 CSM이 미래 보험이익 기반을 결정한다.",
+      "related_business_ids": ["life_insurance"],
+      "transmission": "상품규제·계리가정·유지율 변화가 신계약 CSM과 보험손익에 전이된다.",
+      "importance_criteria": ["CSM 산정 또는 계리가정 제도 변경", "종신·건강보험 판매경쟁 변화", "유지율·해지율 변화"],
+      "source_ids": ["S2", "S4", "S11"]
+    },
+    {
+      "id": "life_ga_distribution",
+      "name": "GA·판매채널 규제",
+      "why_it_matters": "대형 GA 기반 판매구조가 신계약과 사업비에 직접 연결된다.",
+      "related_business_ids": ["ga_distribution", "life_insurance"],
+      "transmission": "수수료·비교설명 규제가 설계사 생산성, 상품 믹스와 계약 유지율을 바꾼다.",
+      "importance_criteria": ["판매수수료 제도 시행 또는 변경", "대형 GA 규제", "설계사 생산성·이동·정착률 변화"],
+      "source_ids": ["S5", "S13", "S14"]
+    },
+    {
+      "id": "life_indonesia_finance",
+      "name": "인도네시아 보험·은행 연계",
+      "why_it_matters": "Nobu Bank와 현지 보험법인의 결합은 한화생명 고유의 해외 성장축이다.",
+      "related_business_ids": ["overseas_finance"],
+      "transmission": "현지 은행·보험 규제와 방카슈랑스 실행이 해외 성장성과 연결 건전성에 영향을 준다.",
+      "importance_criteria": ["Nobu Bank 또는 한화 현지법인 직접 언급", "OJK 은행·보험 규제 변경", "방카슈랑스·디지털금융 제휴"],
+      "source_ids": ["S1", "S6"]
+    },
+    {
+      "id": "life_insurance_ai",
+      "name": "보험 영업 AI·금융 AI 규제",
+      "why_it_matters": "FP 영업지원 AI의 생산성과 금융 AI 규제가 영업·기술투자에 동시에 영향을 준다.",
+      "related_business_ids": ["insurance_ai", "ga_distribution"],
+      "transmission": "AI 도입과 규제 변화가 영업생산성, 고객보호, 모델검증 및 보안비용으로 전이된다.",
+      "importance_criteria": ["보험 영업·상담·언더라이팅 AI 상용화", "금융 AI 가이드라인 변경", "AI 투자정보·개인정보 사고"],
+      "source_ids": ["S7", "S8", "S15"]
+    },
+    {
+      "id": "life_senior_care",
+      "name": "시니어·치매·간병보험",
+      "why_it_matters": "고령화와 장기요양정책이 건강보험 상품 수요와 보장 설계에 연결된다.",
+      "related_business_ids": ["retirement_senior", "life_insurance"],
+      "transmission": "치매·간병 수요와 공적 돌봄제도 변화가 보험 수요, 담보와 위험률 가정에 영향을 준다.",
+      "importance_criteria": ["장기요양·간병 정책 변경", "치매·간병보험 상품 규제", "보험사 시니어 서비스 제휴"],
+      "source_ids": ["S10", "S16"]
+    }
+  ],
+  "rss_queries": [
+    {"id": "life_ko_01", "language": "ko", "query": "생명보험 (K-ICS OR 보험부채 할인율 OR 듀레이션갭 OR 초장기채)", "topic_ids": ["life_alm_kics"]},
+    {"id": "life_ko_02", "language": "ko", "query": "생명보험 (신계약 CSM OR IFRS17 계리가정 OR 무저해지)", "topic_ids": ["life_csm_ifrs17"]},
+    {"id": "life_ko_03", "language": "ko", "query": "보험 GA (판매수수료 OR 1200%룰 OR 비교설명의무)", "topic_ids": ["life_ga_distribution"]},
+    {"id": "life_ko_04", "language": "ko", "query": "한화생명 (Nobu Bank OR 인도네시아 OR 보험 AI OR 간병보험)", "topic_ids": ["life_indonesia_finance", "life_insurance_ai", "life_senior_care"]},
+    {"id": "life_en_01", "language": "en", "query": "Korea life insurers (K-ICS OR liability discount rate OR duration gap OR long-term bonds)", "topic_ids": ["life_alm_kics"]},
+    {"id": "life_en_02", "language": "en", "query": "Korea life insurance (new business CSM OR IFRS17 assumptions OR lapse rate)", "topic_ids": ["life_csm_ifrs17"]},
+    {"id": "life_en_03", "language": "en", "query": "Korea insurance GA (commission reform OR sales regulation OR disclosure duty)", "topic_ids": ["life_ga_distribution"]},
+    {"id": "life_en_04", "language": "en", "query": "Hanwha Life (Nobu Bank OR Indonesia OR insurance AI OR senior care)", "topic_ids": ["life_indonesia_finance", "life_insurance_ai", "life_senior_care"]}
+  ],
+  "business_tags": [
+    "보험상품·CSM",
+    "보험계리·IFRS17",
+    "보험 자산운용·ALM",
+    "자본건전성·K-ICS",
+    "GA·판매채널",
+    "시니어·치매·간병",
+    "AI·디지털전략",
+    "해외보험·금융",
+    "인도네시아 금융플랫폼"
+  ],
+  "excluded_rules": [
+    "HLE·e스포츠·LCK 경기 및 선수 관련 기사는 제외한다.",
+    "보험 추천·가입상담·설계사 모집 등 광고성 콘텐츠는 제외한다.",
+    "목표주가·급등주·배당주 추천처럼 투자판단만 다루는 기사는 제외한다.",
+    "한화 비금융 계열사 단독 기사는 금융 연결경로가 명시되지 않으면 제외한다.",
+    "스포츠·문화 후원과 일반 이벤트는 사업 또는 조직 변화가 없으면 제외한다.",
+    "일반 금리·환율 속보는 ALM·K-ICS·해외법인 등 구체적인 전이경로가 없으면 제외한다."
+  ],
+  "sources": [
+    {"id": "S1", "title": "한화생명 회사소개", "publisher": "한화생명", "published_at": "2026-09-03 조회", "url": "https://company.hanwhalife.com/ko"},
+    {"id": "S2", "title": "FY2026 2분기 실적발표자료", "publisher": "한화생명", "published_at": "2026", "url": "https://company.hanwhalife.com/ko/investment/investor/earnings-release"},
+    {"id": "S4", "title": "한화생명 2026년 상반기 실적발표", "publisher": "한국경제", "published_at": "2026-08-12", "url": "https://www.hankyung.com/article/202608127077P"},
+    {"id": "S5", "title": "한화생명 2026년 상반기 실적 세부", "publisher": "더밸류뉴스", "published_at": "2026-08-13", "url": "https://www.thevaluenews.co.kr/news/200755"},
+    {"id": "S6", "title": "Hanwha Life enters Indonesian banking sector", "publisher": "Hanwha Group", "published_at": "2024-05-03", "url": "https://www.hanwha.com/newsroom/news/press-releases/hanwha-life-enters-indonesian-banking-sector-expanding-presence-as-a-global-integrated-financial-company.do"},
+    {"id": "S7", "title": "한화생명, AI가 영업경쟁력 높였다", "publisher": "한화생명", "published_at": "2026-05-11", "url": "https://company.hanwhalife.com/ko/about/company-overview/newsroom/press/3530"},
+    {"id": "S8", "title": "Hanwha AI Center launches in San Francisco", "publisher": "Hanwha Group", "published_at": "2024-12-11", "url": "https://www.hanwha.com/newsroom/news/press-releases/hanwha-establishes-san-francisco-based-hanwha-ai-center-a-global-hub-for-research-partnerships-and-financial-innovation.do"},
+    {"id": "S9", "title": "중립투자형 상품 수익률 전체 사업자 1위", "publisher": "한화생명", "published_at": "2026-03-19", "url": "https://company.hanwhalife.com/ko/about/company-overview/newsroom/press/3508"},
+    {"id": "S10", "title": "한화생명 치매담은간병플러스보험 출시", "publisher": "한화생명", "published_at": "2026-04-13", "url": "https://company.hanwhalife.com/ko/about/company-overview/newsroom/press/3523"},
+    {"id": "S11", "title": "보험부채 할인율 현실화 및 듀레이션갭 규제방안", "publisher": "금융위원회", "published_at": "2025-10-20", "url": "https://www.fsc.go.kr/no010101/85446"},
+    {"id": "S12", "title": "보험회사 기본자본 K-ICS비율 제도 시행", "publisher": "금융위원회", "published_at": "2026-01-13", "url": "https://www.fsc.go.kr/no010101/86032"},
+    {"id": "S13", "title": "보험 판매수수료 분급체계 개편", "publisher": "금융위원회", "published_at": "2026-01-14", "url": "https://www.fsc.go.kr/no010101/86050"},
+    {"id": "S14", "title": "GA 1200%룰 확대 및 비교설명 강화", "publisher": "금융위원회", "published_at": "2026-06-30", "url": "https://www.fsc.go.kr/no010101/87217"},
+    {"id": "S15", "title": "금융분야 AI 가이드라인 개정안", "publisher": "금융위원회", "published_at": "2026-06-18", "url": "https://www.fsc.go.kr/no010101/87142"},
+    {"id": "S16", "title": "지역사회 통합돌봄 본격 시행", "publisher": "보건복지부", "published_at": "2026-03-26", "url": "https://www.mohw.go.kr/board.es?act=view&bid=0027&list_no=1489823&mid=a10503010100&nPage=2&tag="}
+  ]
+}

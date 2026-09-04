@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import json
 import os
 import re
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -99,6 +102,48 @@ class TrendFeedAppTest(unittest.TestCase):
         self.assertNotIn('[class*="st-"]', style)
         self.assertIn('"Material Symbols Rounded" !important', style)
         self.assertIn('[data-testid="stHeader"]', style)
+
+    def test_header_separates_displayed_data_from_latest_failed_attempt(self) -> None:
+        fallback_path = (
+            Path(__file__).resolve().parents[1]
+            / "data"
+            / "demo_outputs"
+            / "trend_feed_fallback.json"
+        )
+        live = json.loads(fallback_path.read_text(encoding="utf-8"))
+        now = datetime.now(timezone.utc).isoformat()
+        live.update(generated_at=now, is_synthetic=False, notice="")
+
+        previous = os.environ.get("GFR_LIVE_TRENDS_PATH")
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                live_path = Path(tmp) / "latest_trends.json"
+                live_path.write_text(json.dumps(live, ensure_ascii=False), encoding="utf-8")
+                (Path(tmp) / "latest_refresh.json").write_text(
+                    json.dumps(
+                        {
+                            "attempted_at": now,
+                            "outcome": "failed",
+                            "message": "AI 분석 요청 실패",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                os.environ["GFR_LIVE_TRENDS_PATH"] = str(live_path)
+                app = _run()
+                rendered = _rendered(app)
+                captions = "\n".join(item.value for item in app.caption)
+        finally:
+            if previous is None:
+                os.environ.pop("GFR_LIVE_TRENDS_PATH", None)
+            else:
+                os.environ["GFR_LIVE_TRENDS_PATH"] = previous
+
+        self.assertIn("표시 데이터", rendered)
+        self.assertIn("최근 시도", rendered)
+        self.assertIn("실패", rendered)
+        self.assertIn("AI 분석 요청 실패", captions)
 
 
 if __name__ == "__main__":

@@ -7,7 +7,8 @@
 
 ```
 최근 7일 RSS 수집 → 기사 정규화·중복 제거 → Groq 주제 군집화
-→ 트렌드별 기사 연결 → 기사 수·출처 수·최근 집중도 계산 → 주요 트렌드 3건
+→ 트렌드별 기사 연결 → Runtime Company Profile 기반 관련성 분류
+→ 회사별 Intelligence Brief 생성 → 기사 수·출처 수·최근 집중도 계산
 ```
 
 핵심 가치는 깊은 투자분석이나 계열사 손익 예측이 아닙니다. **수십 건의 금융정보를 사람이
@@ -22,8 +23,18 @@ streamlit run app/trend_feed_app.py
 # 최신 데이터 수집 + 트렌드 재생성 (GROQ_API_KEY 필요)
 python -m scripts.refresh_trend_feed
 
+# 진단용: 트렌드까지만 생성하고 회사 관련성 분류 생략
+python -m scripts.refresh_trend_feed --skip-relevance
+
+# 진단용: 관련성까지만 생성하고 회사별 Brief 생략
+python -m scripts.refresh_trend_feed --skip-briefs
+
 # 수집만 (API key 없이 동작 확인)
 python -m scripts.refresh_trend_feed --skip-llm
+
+# RSS 검색 소스 선택 (기본값 profiles)
+python -m scripts.refresh_trend_feed --skip-llm --source-mode common
+python -m scripts.refresh_trend_feed --skip-llm --source-mode both
 
 # 테스트
 python -m unittest discover -s tests -t .
@@ -32,25 +43,49 @@ python -m unittest discover -s tests -t .
 앱 안의 `최신 데이터 불러오기` 버튼도 같은 수집·분석을 수행합니다.
 브라우저는 자동으로 열리지 않습니다 — http://localhost:8501 을 직접 여세요.
 
+신규 앱의 기본 RSS 모드는 세 Runtime Company Profile의 한국어·영어 검색어 24개를 사용하는
+`profiles`입니다. 기존 공통 금융 검색어는 `common`, 두 종류를 함께 쓰려면 `both`를 사용합니다.
+프로파일 쿼리로 수집된 기사는 후보 회사·감시주제·쿼리 ID를 가지며, 이는 회사 관련성 확정
+결과가 아닙니다.
+
 ## 상태 배지
 
 | 배지 | 의미 |
 |---|---|
-| `LIVE` | 24시간 이내에 수집·분석한 결과 |
-| `CACHED` | 그보다 오래된 직전 분석 결과 |
+| `LIVE` | 24시간 이내의 마지막 성공 결과 |
+| `CACHED` | 그보다 오래된 직전 성공 결과 |
 | `DEMO` | 저장소에 포함된 합성 예시 (`data/demo_outputs/trend_feed_fallback.json`) |
 
 `GROQ_API_KEY`가 없으면 RSS 수집까지만 수행하고 기존 결과를 유지합니다. 네트워크·RSS·Groq
-오류가 나도 앱이 죽지 않고 직전 결과를 그대로 보여줍니다.
+오류가 나도 앱이 죽지 않고 직전 결과를 그대로 보여줍니다. 화면 헤더는 표시 중인 데이터의
+생성 시각과 최근 갱신 시도의 시각·성공 여부를 분리해 보여줍니다. 최근 시도 상태와 안전한
+LLM 진단 정보는 `data/live/latest_refresh.json`에 기록됩니다.
+회사 관련성 결과는 트렌드 파일과 분리된
+`data/live/latest_company_relevance.json`에 저장됩니다. 관련성 분류만 실패하면 새 트렌드는
+유지되고 관련성 파일은 `UNCLASSIFIED` 상태로 남습니다.
+회사별 Brief는 `data/live/latest_company_briefs.json`에 별도로 저장되며, Brief 생성만
+실패하면 트렌드와 관련성 결과를 유지합니다.
 
 ## 현재 구현
 
 - 최근 7일 글로벌·국내 RSS 수집 (금리·물가·유동성 / 시장위험·자금 흐름 / 금융규제·디지털금융)
 - URL·유사 제목 기반 중복 제거
-- Groq 기반 트렌드 군집화 (정확히 3건, 기사 ID 검증, 업무 태그 whitelist)
+- Groq Strict Structured Outputs 기반 트렌드 군집화
+  (정확히 3건, 기사 ID 검증, 업무 태그 whitelist, 형식 오류·일시적 API 오류 자동 재시도)
+- Runtime Company Profile 기반 트렌드×회사 관련성 분류
+  (회사별 순차 호출, `high / medium / low / none`, 회사별 주제·태그 및 근거 기사 ID 검증)
+- 관련성 입력은 트렌드당 서로 다른 출처·최신순 기준 대표 기사 최대 3건과 축약 프로필만 사용
+- `high + strong/moderate` 기반 회사별 Main Brief와 코드 기반 Monitoring Item 생성
 - 기사 수·고유 출처 수·최근 48시간 집중도·일별 기사량을 **코드에서 계산**
 - Trend Feed UI (Hero + 2·3위 카드 + Trend Detail + Methodology)
 - Live / Cached / Demo fallback
+
+LLM 모델·temperature·출력 토큰·입력 기사 수·reasoning effort·재시도 설정은
+`configs/trend_demo.yaml`의 `llm` 섹션을 단일 기준으로 사용합니다. 트렌드 생성은
+`max_tokens`, 회사별 관련성 분류는 기본값 1200인 `relevance_max_tokens_per_company`,
+Brief는 기본값 4000인 `brief_max_tokens`를 사용합니다. 관련성 호출은 `reasoning_effort=low`와
+Strict Structured Output을 사용하며, 429 응답은 `retry-after`를 우선해 실패한 회사만 한 번
+재시도합니다.
 
 ## 구현하지 않은 것
 

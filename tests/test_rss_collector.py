@@ -11,6 +11,7 @@ from rag_finance.ingestion.rss_collector import (
     REASON_MISSING_DEPENDENCY,
     REASON_OK,
     WATCH_AREAS,
+    build_profile_feed_specs,
     build_feed_specs,
     classify_watch_area,
     canonical_url,
@@ -21,6 +22,7 @@ from rag_finance.ingestion.rss_collector import (
     parse_feed,
     within_window,
 )
+from rag_finance.profiles.company_profiles import load_all_company_profiles
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "sample_rss.xml"
 # The fixture is anchored around this instant.
@@ -111,6 +113,112 @@ class CollectionTest(unittest.TestCase):
         # Direct feeds are general economy feeds, so their area is derived per item.
         self.assertTrue(all(spec.classify for spec in direct))
         self.assertTrue(all(not spec.classify for spec in search_only))
+
+    def test_profile_feed_specs_cover_all_company_queries_and_languages(self) -> None:
+        profiles = load_all_company_profiles()
+        specs = build_profile_feed_specs(profiles, window_days=7)
+
+        self.assertEqual(len(specs), 24)
+        self.assertEqual(sum(spec.language == "ko" for spec in specs), 12)
+        self.assertEqual(sum(spec.language == "en" for spec in specs), 12)
+        self.assertEqual(
+            {spec.company_id for spec in specs},
+            {"hanwha_life", "hanwha_asset_management", "hanwha_investment"},
+        )
+        self.assertTrue(all(spec.query_id and spec.topic_ids for spec in specs))
+        self.assertTrue(all(spec.provider == "profile_search" for spec in specs))
+
+    def test_source_modes_preserve_common_and_default_profiles_have_no_backups(self) -> None:
+        profiles = load_all_company_profiles()
+        profile_specs = build_feed_specs(source_mode="profiles", profiles=profiles)
+        common_specs = build_feed_specs(source_mode="common", include_backup=False)
+        both_specs = build_feed_specs(
+            source_mode="both", profiles=profiles, include_backup=False
+        )
+
+        self.assertEqual(len(profile_specs), 24)
+        self.assertTrue(all(spec.provider == "profile_search" for spec in profile_specs))
+        self.assertEqual(len(common_specs), 6)
+        self.assertEqual(len(both_specs), 30)
+
+    def test_profile_articles_store_candidate_metadata(self) -> None:
+        profiles = load_all_company_profiles()
+        xml_text = FIXTURE.read_text(encoding="utf-8")
+        articles, debug = collect_articles(
+            fetcher=lambda url, timeout=10: xml_text,
+            now=NOW,
+            retries=0,
+            include_backup=False,
+            source_mode="profiles",
+            profiles=profiles,
+        )
+
+        self.assertTrue(articles)
+        self.assertEqual(debug["source_mode"], "profiles")
+        self.assertEqual(debug["profile_count"], 3)
+        self.assertEqual(debug["query_count"], 24)
+        article = articles[0]
+        self.assertEqual(
+            article["candidate_companies"],
+            ["hanwha_asset_management", "hanwha_investment", "hanwha_life"],
+        )
+        self.assertTrue(article["matched_topic_ids"])
+        self.assertEqual(len(article["matched_query_ids"]), 24)
+        self.assertEqual(set(debug["company_candidate_counts"]), set(profiles))
+
+    def test_dedupe_merges_candidate_metadata_in_stable_order(self) -> None:
+        base = {
+            "title": "동일한 퇴직연금 기사",
+            "url": "https://example.com/retirement",
+            "published_at": NOW.isoformat(),
+        }
+        articles = [
+            {
+                **base,
+                "candidate_companies": ["hanwha_life"],
+                "matched_topic_ids": ["life_retirement"],
+                "matched_query_ids": ["life_ko_01"],
+            },
+            {
+                **base,
+                "candidate_companies": ["hanwha_investment"],
+                "matched_topic_ids": ["investment_retirement"],
+                "matched_query_ids": ["investment_ko_02"],
+            },
+        ]
+
+        merged = dedupe_articles(articles)
+        self.assertEqual(len(merged), 1)
+        self.assertEqual(
+            merged[0]["candidate_companies"],
+            ["hanwha_investment", "hanwha_life"],
+        )
+        self.assertEqual(
+            merged[0]["matched_query_ids"], ["investment_ko_02", "life_ko_01"]
+        )
+
+    def test_profile_mode_allows_partial_feed_failure(self) -> None:
+        profiles = load_all_company_profiles()
+        xml_text = FIXTURE.read_text(encoding="utf-8")
+
+        def fetcher(url: str, timeout: int = 10) -> str:
+            if "hl=en-US" in url:
+                raise OSError("feed unavailable")
+            return xml_text
+
+        articles, debug = collect_articles(
+            fetcher=fetcher,
+            now=NOW,
+            retries=0,
+            include_backup=False,
+            source_mode="profiles",
+            profiles=profiles,
+        )
+
+        self.assertTrue(articles)
+        self.assertEqual(debug["feeds_ok"], 12)
+        self.assertEqual(debug["feeds_failed"], 12)
+        self.assertEqual(debug["reason"], REASON_OK)
 
     def test_direct_feed_items_are_classified_by_keyword(self) -> None:
         feed = """<?xml version="1.0"?><rss version="2.0"><channel>

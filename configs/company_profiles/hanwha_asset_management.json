@@ -1,0 +1,248 @@
+{
+  "schema_version": "1.0",
+  "company_id": "hanwha_asset_management",
+  "company_name": "한화자산운용",
+  "profile_updated_at": "2026-09-03",
+  "profile_summary": [
+    "공모펀드·PLUS ETF, 연금·TDF, 채권·기관 투자일임과 대체투자가 핵심 운용영역이다.",
+    "AUM 증가뿐 아니라 운용보수, 성과보수, 자금 순유입과 엑시트를 구분해 해석해야 한다.",
+    "미국·싱가포르·UAE 거점과 해외 인프라·VC는 글로벌 성장과 리스크가 함께 존재하는 영역이다.",
+    "산업 뉴스는 PLUS ETF의 자금흐름·상품성과·상품전략으로 연결될 때만 중요하게 본다."
+  ],
+  "business_areas": [
+    {
+      "id": "public_funds_etf",
+      "name": "공모펀드·PLUS ETF",
+      "description": "주식·채권·테마형 ETF와 공모펀드를 운용하며 AUM과 운용보수를 창출한다.",
+      "source_ids": ["S1", "S4", "S8"]
+    },
+    {
+      "id": "retirement_tdf",
+      "name": "연금·TDF",
+      "description": "퇴직연금 및 개인연금 고객을 대상으로 TDF와 연금용 펀드·ETF를 제공한다.",
+      "source_ids": ["S4", "S7"]
+    },
+    {
+      "id": "fixed_income_mandates",
+      "name": "채권운용·기관 투자일임",
+      "description": "국내외 채권과 기관 위탁자금을 운용해 투자일임 및 운용보수를 창출한다.",
+      "source_ids": ["S1", "S2"]
+    },
+    {
+      "id": "alternatives_infrastructure",
+      "name": "대체투자·인프라",
+      "description": "부동산·리츠·인프라 등 대체자산을 운용하며 기본보수와 엑시트 성과보수를 추구한다.",
+      "source_ids": ["S1", "S9"]
+    },
+    {
+      "id": "global_management",
+      "name": "글로벌 자산운용",
+      "description": "미국·싱가포르·UAE 거점을 활용해 채권, 인프라와 성장투자를 확대한다.",
+      "source_ids": ["S2", "S5"]
+    },
+    {
+      "id": "digital_investment",
+      "name": "디지털 투자 인프라",
+      "description": "AI 기반 운영 고도화와 블록체인 협력을 추진하되 독립 수익사업으로 과장하지 않는다.",
+      "source_ids": ["S4", "S5"]
+    }
+  ],
+  "revenue_drivers": [
+    {
+      "id": "base_management_fees",
+      "name": "기본 운용보수",
+      "description": "공모펀드·ETF·연금·기관자금의 운용규모와 보수율이 반복 수익을 결정한다.",
+      "source_ids": ["S1", "S9"]
+    },
+    {
+      "id": "net_asset_inflows",
+      "name": "자금 순유입과 AUM",
+      "description": "ETF·연금·기관 위탁자금의 순유입과 시장가치 변화가 운용규모를 움직인다.",
+      "source_ids": ["S1", "S4", "S8"]
+    },
+    {
+      "id": "performance_fees",
+      "name": "성과보수·엑시트",
+      "description": "대체투자 회수와 성과 실현이 비경상적인 성과보수에 영향을 준다.",
+      "source_ids": ["S9"]
+    },
+    {
+      "id": "pension_growth",
+      "name": "연금시장 성장",
+      "description": "퇴직연금 실적배당 확대와 TDF 자금이 장기 수탁고 및 상품 경쟁력으로 연결된다.",
+      "source_ids": ["S7", "S10"]
+    },
+    {
+      "id": "global_business_growth",
+      "name": "글로벌 운용 성장",
+      "description": "해외 거점의 채권·인프라·VC 운용자산과 현지 고객 확보가 수익원을 다변화한다.",
+      "source_ids": ["S2", "S5"]
+    }
+  ],
+  "strategic_priorities": [
+    {
+      "id": "plus_etf_growth",
+      "name": "PLUS ETF 규모와 상품 경쟁력 확대",
+      "status": "active",
+      "signals": ["ETF 순자산", "순유입", "보수율", "상품 출시·청산"],
+      "source_ids": ["S4", "S8"]
+    },
+    {
+      "id": "pension_positioning",
+      "name": "연금·TDF 시장 포지셔닝",
+      "status": "active",
+      "signals": ["TDF 순유입", "디폴트옵션", "기금형 퇴직연금"],
+      "source_ids": ["S4", "S7", "S10"]
+    },
+    {
+      "id": "global_alternatives",
+      "name": "글로벌 대체투자 확대",
+      "status": "active",
+      "signals": ["해외 인프라 AUM", "신규 펀드", "리파이낸싱·엑시트"],
+      "source_ids": ["S1", "S2", "S5"]
+    },
+    {
+      "id": "digital_operations",
+      "name": "AI·디지털 운용 고도화",
+      "status": "emerging",
+      "signals": ["AI 마케팅·분석", "디지털 투자 인프라", "블록체인 협력"],
+      "source_ids": ["S4", "S5"]
+    }
+  ],
+  "risk_factors": [
+    {
+      "id": "fee_competition",
+      "name": "ETF·펀드 보수 경쟁",
+      "transmission": "보수 인하 경쟁이 순유입에는 도움이 될 수 있지만 단위 AUM당 수익성을 낮출 수 있다.",
+      "source_ids": ["S8"]
+    },
+    {
+      "id": "market_outflow_risk",
+      "name": "시장하락·자금유출",
+      "transmission": "시장가치 하락과 펀드 환매가 AUM 및 기본 운용보수를 동시에 감소시킨다.",
+      "source_ids": ["S1", "S3"]
+    },
+    {
+      "id": "alternative_liquidity_risk",
+      "name": "대체투자 유동성·평가",
+      "transmission": "고금리와 리파이낸싱 경색이 자산평가, 회수기간과 성과보수 실현을 악화시킬 수 있다.",
+      "source_ids": ["S1", "S3", "S9"]
+    },
+    {
+      "id": "credit_duration_risk",
+      "name": "채권 신용·듀레이션",
+      "transmission": "금리와 신용스프레드 변화가 채권형 상품성과, 기관 위탁자금과 리스크 한도에 영향을 준다.",
+      "source_ids": ["S2", "S3"]
+    },
+    {
+      "id": "global_regulatory_fx_risk",
+      "name": "해외 규제·환율",
+      "transmission": "현지 규제와 환율·자금조달 여건이 해외법인과 글로벌 펀드의 성장·성과에 전이된다.",
+      "source_ids": ["S2", "S5"]
+    },
+    {
+      "id": "digital_compliance_risk",
+      "name": "디지털자산·AI 컴플라이언스",
+      "transmission": "토큰증권 및 AI 규율 변화가 상품화 범위, 파트너십과 내부통제 비용을 바꿀 수 있다.",
+      "source_ids": ["S5", "S11"]
+    }
+  ],
+  "watch_topics": [
+    {
+      "id": "fund_etf_competition",
+      "name": "PLUS ETF 자금·보수 경쟁",
+      "why_it_matters": "ETF 순유입과 보수율이 AUM 성장과 반복 운용보수에 직접 연결된다.",
+      "related_business_ids": ["public_funds_etf"],
+      "transmission": "시장점유율·보수·상품경쟁 변화가 순유입, AUM과 수익성에 영향을 준다.",
+      "importance_criteria": ["ETF 순자산 또는 대규모 순유입·유출", "보수 인하와 상품 출시·청산", "산업 이벤트가 PLUS 상품성과·자금흐름으로 연결"],
+      "source_ids": ["S4", "S8"]
+    },
+    {
+      "id": "fund_retirement_tdf",
+      "name": "퇴직연금·TDF 자금 이동",
+      "why_it_matters": "연금시장 확대와 TDF 선택이 장기 수탁고와 상품경쟁력을 결정한다.",
+      "related_business_ids": ["retirement_tdf"],
+      "transmission": "디폴트옵션·기금형 제도와 실적배당 비중 변화가 TDF·연금펀드 자금으로 전이된다.",
+      "importance_criteria": ["퇴직연금 제도 변경", "TDF·디폴트옵션 대규모 자금 이동", "사업자 수익률·수수료 평가"],
+      "source_ids": ["S4", "S7", "S10"]
+    },
+    {
+      "id": "fund_fixed_income",
+      "name": "채권·기관 위탁운용",
+      "why_it_matters": "채권성과와 기관자금 수탁은 운용규모와 반복 보수의 핵심 축이다.",
+      "related_business_ids": ["fixed_income_mandates"],
+      "transmission": "금리·크레딧·기관 자금배분 변화가 채권형 상품성과와 위탁자금 유출입에 영향을 준다.",
+      "importance_criteria": ["기관 대규모 위탁운용사 선정·교체", "채권펀드 자금 급변", "신용사건 또는 듀레이션 위험 확대"],
+      "source_ids": ["S1", "S2", "S3"]
+    },
+    {
+      "id": "fund_alternatives",
+      "name": "대체투자 리파이낸싱·엑시트",
+      "why_it_matters": "대체자산의 회수와 자금조달이 평가손익, 기본보수와 성과보수에 연결된다.",
+      "related_business_ids": ["alternatives_infrastructure"],
+      "transmission": "리파이낸싱·거래시장·자산가격 변화가 펀드 유동성과 엑시트 시점에 영향을 준다.",
+      "importance_criteria": ["대형 리파이낸싱 또는 만기연장", "자산 매각·손상·성과보수", "인프라·부동산 규제 변화"],
+      "source_ids": ["S1", "S3", "S9"]
+    },
+    {
+      "id": "fund_global_management",
+      "name": "글로벌 운용사업 확대",
+      "why_it_matters": "미국·싱가포르·UAE 거점은 글로벌 채권·인프라·성장투자의 차별적인 확장축이다.",
+      "related_business_ids": ["global_management", "alternatives_infrastructure"],
+      "transmission": "현지 펀드 출시·기관고객·규제 변화가 해외 AUM과 수익 다변화에 영향을 준다.",
+      "importance_criteria": ["해외법인 신규 펀드·고객·파트너십", "MENA·미국·싱가포르 운용규제", "해외 인프라·VC 투자 및 회수"],
+      "source_ids": ["S2", "S5"]
+    },
+    {
+      "id": "fund_digital_investment",
+      "name": "디지털 투자 인프라·토큰증권",
+      "why_it_matters": "블록체인 협력과 디지털 운용 고도화는 미래 상품·운영 경쟁력과 관련된다.",
+      "related_business_ids": ["digital_investment"],
+      "transmission": "토큰증권 제도와 AI·블록체인 기술 변화가 상품화 범위와 내부 운영에 영향을 준다.",
+      "importance_criteria": ["자산운용사 참여가 가능한 토큰증권 규정", "실제 펀드·인프라 출시", "운용·마케팅 AI 도입 또는 규제"],
+      "source_ids": ["S4", "S5", "S11"]
+    }
+  ],
+  "rss_queries": [
+    {"id": "fund_ko_01", "language": "ko", "query": "자산운용사 ETF (순자산 OR 순유입 OR 보수인하 OR 상품출시)", "topic_ids": ["fund_etf_competition"]},
+    {"id": "fund_ko_02", "language": "ko", "query": "자산운용사 (퇴직연금 OR TDF OR 디폴트옵션 OR 기금형)", "topic_ids": ["fund_retirement_tdf"]},
+    {"id": "fund_ko_03", "language": "ko", "query": "자산운용사 (기관 위탁운용 OR 채권펀드 OR 대체투자 리파이낸싱 OR 엑시트)", "topic_ids": ["fund_fixed_income", "fund_alternatives"]},
+    {"id": "fund_ko_04", "language": "ko", "query": "한화자산운용 (PLUS ETF OR 해외 인프라 OR 글로벌 OR 블록체인 OR AI)", "topic_ids": ["fund_etf_competition", "fund_global_management", "fund_digital_investment"]},
+    {"id": "fund_en_01", "language": "en", "query": "Korea asset managers ETF (net inflows OR assets OR fee cuts OR product launch)", "topic_ids": ["fund_etf_competition"]},
+    {"id": "fund_en_02", "language": "en", "query": "Korea asset management (retirement pension OR TDF OR default option)", "topic_ids": ["fund_retirement_tdf"]},
+    {"id": "fund_en_03", "language": "en", "query": "asset managers (institutional mandates OR bond funds OR infrastructure refinancing OR alternative asset exits)", "topic_ids": ["fund_fixed_income", "fund_alternatives"]},
+    {"id": "fund_en_04", "language": "en", "query": "Hanwha Asset Management (PLUS ETF OR infrastructure OR global funds OR blockchain OR AI)", "topic_ids": ["fund_etf_competition", "fund_global_management", "fund_digital_investment"]}
+  ],
+  "business_tags": [
+    "ETF 상품전략",
+    "연금·TDF",
+    "공모펀드",
+    "채권운용",
+    "투자일임·기관자금",
+    "대체투자·인프라",
+    "글로벌사업",
+    "디지털자산·블록체인",
+    "AI·디지털전략",
+    "리스크·컴플라이언스"
+  ],
+  "excluded_rules": [
+    "AUM·자금흐름·상품성과와 연결되지 않는 일반 주가지수·금리·환율 속보는 제외한다.",
+    "K방산·반도체·AI·전력 등 산업 뉴스는 PLUS ETF 상품성과·순유입·상품전략과 연결되지 않으면 제외한다.",
+    "목표주가·종목추천·수익률 홍보만 다루는 투자권유성 콘텐츠는 제외한다.",
+    "개별 부동산 매물·분양·투자추천은 실제 운용자산 또는 대체투자시장 전이경로가 없으면 제외한다.",
+    "한화 비금융 계열사 단독 기사는 펀드 보유자산·ETF 테마·운용전략과 연결되지 않으면 제외한다.",
+    "AI·블록체인 일반 뉴스는 자산운용 상품·운영·규제와 연결되지 않으면 제외한다."
+  ],
+  "sources": [
+    {"id": "S1", "title": "회사소개", "publisher": "한화자산운용", "published_at": "2026-09-03 조회", "url": "https://www.hanwhafund.co.kr/ko/company/introduce"},
+    {"id": "S2", "title": "글로벌 네트워크", "publisher": "한화자산운용", "published_at": "2026-09-03 조회", "url": "https://www.hanwhafund.co.kr/ko/company/global-network"},
+    {"id": "S3", "title": "운용시스템 및 리스크 관리", "publisher": "한화자산운용", "published_at": "2026-09-03 조회", "url": "https://www.hanwhafund.co.kr/ko/company/os/risk-management"},
+    {"id": "S4", "title": "2026년 전사 디지털 마케팅 대행사 선정 제안요청서", "publisher": "한화자산운용", "published_at": "2026-02-02", "url": "https://www.hanwhafund.co.kr/ko/insight/notice/30750"},
+    {"id": "S5", "title": "한화 리더 인터뷰 시리즈 한화자산운용 편", "publisher": "한화그룹", "published_at": "2026-04-30", "url": "https://www.hanwha.co.kr/newsroom/discover/view.do?seq=15657"},
+    {"id": "S7", "title": "한화자산운용 경영공시", "publisher": "한화자산운용", "published_at": "2026-08-27", "url": "https://www.hanwhafund.co.kr/ko/announce?disDiv=MANAGE"},
+    {"id": "S8", "title": "PLUS ETF 홈페이지", "publisher": "한화자산운용", "published_at": "2026-09-02 조회", "url": "https://www.plusetf.co.kr/"},
+    {"id": "S9", "title": "한화자산운용 성과보수와 대체투자 엑시트", "publisher": "딜사이트", "published_at": "2025-04-07", "url": "https://dealsite.co.kr/articles/139292"},
+    {"id": "S10", "title": "2025년 우리나라 퇴직연금 투자 백서", "publisher": "고용노동부", "published_at": "2026-05-20", "url": "https://www.moel.go.kr/news/enews/report/enewsView.do?news_seq=19411"},
+    {"id": "S11", "title": "자본시장 체질개선 방안", "publisher": "금융위원회", "published_at": "2026-03-18", "url": "https://www.fsc.go.kr/no010101/86493"}
+  ]
+}

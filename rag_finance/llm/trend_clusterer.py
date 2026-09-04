@@ -10,6 +10,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 import json
 import os
+import time
 from typing import Any, Mapping, Sequence
 
 from rag_finance.ingestion.rss_collector import WATCH_AREAS
@@ -24,6 +25,11 @@ LLM_SUMMARY_MAX_CHARS = 140
 MAX_TAGS_PER_TREND = 3
 MAX_WATCH_NEXT = 3
 DEFAULT_MODEL = "openai/gpt-oss-120b"
+DEFAULT_TEMPERATURE = 0.1
+DEFAULT_MAX_TOKENS = 2600
+DEFAULT_REASONING_EFFORT = "low"
+DEFAULT_MAX_ATTEMPTS = 2
+DEFAULT_RETRY_BASE_DELAY = 1.0
 
 # The model may only pick from this list; anything else is dropped.
 ALLOWED_BUSINESS_TAGS: tuple[str, ...] = (
@@ -39,6 +45,14 @@ ALLOWED_BUSINESS_TAGS: tuple[str, ...] = (
 )
 
 TEXT_FIELDS = ("title_ko", "summary_ko", "why_it_matters_ko")
+
+
+class TrendClusteringError(Exception):
+    """A model/API failure with safe, serializable attempt diagnostics."""
+
+    def __init__(self, message: str, diagnostics: Mapping[str, Any]) -> None:
+        super().__init__(message)
+        self.diagnostics = dict(diagnostics)
 
 
 def select_articles_for_llm(
@@ -104,19 +118,21 @@ article_ids는 입력에 있는 article_id만 사용하라.
 각 트렌드는 가능하면 기사 3건 이상, 서로 다른 출처 2곳 이상을 묶어라.
 related_business_tags는 다음 목록에서만 최대 {MAX_TAGS_PER_TREND}개 고르라: {", ".join(ALLOWED_BUSINESS_TAGS)}"""
 
+    trend_example = {
+        "trend_id": "trend_01",
+        "title_ko": "간결한 한국어 제목",
+        "summary_ko": f"최근 {window_days}일간 나타난 변화",
+        "why_it_matters_ko": "금융산업 관점에서 주목할 이유",
+        "watch_next": ["후속 관찰 포인트 1", "후속 관찰 포인트 2"],
+        "article_ids": ["입력에 존재하는 article_id"],
+        "related_business_tags": list(ALLOWED_BUSINESS_TAGS[:2]),
+    }
     contract = {
         "generated_at": "ISO datetime",
         "window_days": window_days,
         "trends": [
-            {
-                "trend_id": "trend_01",
-                "title_ko": "간결한 한국어 제목",
-                "summary_ko": f"최근 {window_days}일간 나타난 변화",
-                "why_it_matters_ko": "금융산업 관점에서 주목할 이유",
-                "watch_next": ["후속 관찰 포인트 1", "후속 관찰 포인트 2"],
-                "article_ids": ["입력에 존재하는 article_id"],
-                "related_business_tags": list(ALLOWED_BUSINESS_TAGS[:2]),
-            }
+            {**trend_example, "trend_id": f"trend_{index:02d}"}
+            for index in range(1, TREND_COUNT + 1)
         ],
     }
     user_payload = {
@@ -129,6 +145,63 @@ related_business_tags는 다음 목록에서만 최대 {MAX_TAGS_PER_TREND}개 �
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
     ]
+
+
+def build_trend_response_format(
+    articles: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Build Groq strict Structured Outputs schema for the selected articles."""
+    article_ids = [
+        str(article["article_id"])
+        for article in articles
+        if article.get("article_id")
+    ]
+    trend_schema = {
+        "type": "object",
+        "properties": {
+            "trend_id": {"type": "string"},
+            "title_ko": {"type": "string"},
+            "summary_ko": {"type": "string"},
+            "why_it_matters_ko": {"type": "string"},
+            "watch_next": {"type": "array", "items": {"type": "string"}},
+            "article_ids": {
+                "type": "array",
+                "items": {"type": "string", "enum": article_ids},
+            },
+            "related_business_tags": {
+                "type": "array",
+                "items": {"type": "string", "enum": list(ALLOWED_BUSINESS_TAGS)},
+            },
+        },
+        "required": [
+            "trend_id",
+            "title_ko",
+            "summary_ko",
+            "why_it_matters_ko",
+            "watch_next",
+            "article_ids",
+            "related_business_tags",
+        ],
+        "additionalProperties": False,
+    }
+    schema = {
+        "type": "object",
+        "properties": {
+            "generated_at": {"type": "string"},
+            "window_days": {"type": "integer"},
+            "trends": {"type": "array", "items": trend_schema},
+        },
+        "required": ["generated_at", "window_days", "trends"],
+        "additionalProperties": False,
+    }
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "financial_trend_payload",
+            "strict": True,
+            "schema": schema,
+        },
+    }
 
 
 def parse_structured_json(text: str) -> dict[str, Any]:
@@ -223,22 +296,69 @@ def validate_trend_payload(
     return {"generated_at": generated_at, "window_days": window_days, "trends": trends}
 
 
+def _attribute(value: Any, name: str, default: Any = None) -> Any:
+    if isinstance(value, Mapping):
+        return value.get(name, default)
+    return getattr(value, name, default)
+
+
+def _usage_summary(response: Any) -> dict[str, int]:
+    usage = _attribute(response, "usage")
+    if usage is None:
+        return {}
+    result: dict[str, int] = {}
+    for field in ("prompt_tokens", "completion_tokens", "total_tokens"):
+        value = _attribute(usage, field)
+        if isinstance(value, int):
+            result[field] = value
+    return result
+
+
+def _status_code(exc: Exception) -> int | None:
+    value = getattr(exc, "status_code", None)
+    if not isinstance(value, int):
+        value = getattr(getattr(exc, "response", None), "status_code", None)
+    return value if isinstance(value, int) else None
+
+
+def _is_transient_api_error(exc: Exception) -> bool:
+    status = _status_code(exc)
+    if status in {408, 409, 429, 500, 502, 503, 504}:
+        return True
+    name = type(exc).__name__.lower()
+    return any(token in name for token in ("timeout", "connection", "ratelimit"))
+
+
+def _diagnostic_base(model: str, selected_count: int, max_attempts: int) -> dict[str, Any]:
+    return {
+        "model": model,
+        "selected_article_count": selected_count,
+        "max_attempts": max_attempts,
+        "attempts": [],
+    }
+
+
 def cluster_trends(
     articles: Sequence[Mapping[str, Any]],
     *,
     client: Any = None,
     api_key: str | None = None,
     model: str = DEFAULT_MODEL,
-    temperature: float = 0.2,
-    max_tokens: int = 2600,
+    temperature: float = DEFAULT_TEMPERATURE,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
     window_days: int = 7,
     max_articles: int = MAX_ARTICLES_FOR_LLM,
-    reasoning_effort: str | None = "low",
+    reasoning_effort: str | None = DEFAULT_REASONING_EFFORT,
+    max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+    retry_base_delay: float = DEFAULT_RETRY_BASE_DELAY,
+    sleep_fn: Any = time.sleep,
 ) -> dict[str, Any]:
     if len(articles) < TREND_COUNT:
         raise ValueError("At least three articles are required to build trends")
 
     selected = select_articles_for_llm(articles, limit=max_articles)
+    if max_attempts < 1:
+        raise ValueError("max_attempts must be at least 1")
     if client is None:
         key = api_key or os.environ.get("GROQ_API_KEY", "")
         if not key:
@@ -249,37 +369,92 @@ def cluster_trends(
             raise RuntimeError("Install the groq package for trend clustering") from exc
         client = Groq(api_key=key)
 
+    base_messages = build_cluster_messages(selected, window_days=window_days)
     request: dict[str, Any] = {
         "model": model,
-        "messages": build_cluster_messages(selected, window_days=window_days),
+        "messages": base_messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
-        # Force a parseable object rather than prose wrapped around it.
-        "response_format": {"type": "json_object"},
+        "response_format": build_trend_response_format(selected),
     }
     if reasoning_effort:
         # Reasoning models otherwise spend the whole budget thinking and return
         # empty content with finish_reason "length".
         request["reasoning_effort"] = reasoning_effort
 
-    try:
-        response = client.chat.completions.create(**request)
-    except TypeError:
-        # A client or model that does not accept these options.
-        request.pop("reasoning_effort", None)
-        request.pop("response_format", None)
-        response = client.chat.completions.create(**request)
+    diagnostics = _diagnostic_base(model, len(selected), max_attempts)
+    correction = ""
+    for attempt in range(1, max_attempts + 1):
+        attempt_request = dict(request)
+        attempt_request["messages"] = list(base_messages)
+        if correction:
+            attempt_request["messages"].append(
+                {
+                    "role": "user",
+                    "content": (
+                        "이전 응답은 다음 검증을 통과하지 못했다: "
+                        f"{correction}. 입력 기사 ID만 사용해 정확히 "
+                        f"{TREND_COUNT}개 트렌드를 다시 생성하라."
+                    ),
+                }
+            )
 
-    message = response.choices[0].message
-    content = getattr(message, "content", "") or ""
-    if not content.strip():
-        finish = getattr(response.choices[0], "finish_reason", "unknown")
-        raise ValueError(
-            f"Model returned no content (finish_reason={finish}). "
-            "max_tokens 를 늘리거나 reasoning_effort 를 낮춰 주세요."
+        attempt_info: dict[str, Any] = {"attempt": attempt}
+        try:
+            response = client.chat.completions.create(**attempt_request)
+        except Exception as exc:  # SDK exception types vary by installed version.
+            status = _status_code(exc)
+            attempt_info.update(
+                outcome="api_error",
+                error_type=type(exc).__name__,
+                status_code=status,
+            )
+            diagnostics["attempts"].append(attempt_info)
+            if attempt < max_attempts and _is_transient_api_error(exc):
+                sleep_fn(retry_base_delay * (2 ** (attempt - 1)))
+                continue
+            raise TrendClusteringError(
+                "Groq API 요청을 완료하지 못했습니다.", diagnostics
+            ) from exc
+
+        choices = _attribute(response, "choices", []) or []
+        choice = choices[0] if choices else None
+        message = _attribute(choice, "message")
+        content = _attribute(message, "content", "") or ""
+        attempt_info.update(
+            request_id=_attribute(response, "id"),
+            finish_reason=_attribute(choice, "finish_reason", "unknown"),
+            usage=_usage_summary(response),
         )
-    payload = parse_structured_json(content)
-    result = validate_trend_payload(payload, selected)
-    result["model"] = model
-    result["analyzed_article_count"] = len(selected)
-    return result
+
+        try:
+            if not str(content).strip():
+                raise ValueError(
+                    "Model returned no content "
+                    f"(finish_reason={attempt_info['finish_reason']})"
+                )
+            payload = parse_structured_json(str(content))
+            attempt_info["top_level_keys"] = sorted(str(key) for key in payload)
+            result = validate_trend_payload(payload, selected)
+        except (TypeError, ValueError) as exc:
+            correction = str(exc)
+            attempt_info.update(
+                outcome="validation_error",
+                error_type=type(exc).__name__,
+                validation_error=correction,
+            )
+            diagnostics["attempts"].append(attempt_info)
+            if attempt < max_attempts:
+                continue
+            raise TrendClusteringError(
+                f"모델 응답 검증에 {max_attempts}회 연속 실패했습니다.", diagnostics
+            ) from exc
+
+        attempt_info["outcome"] = "success"
+        diagnostics["attempts"].append(attempt_info)
+        result["model"] = model
+        result["analyzed_article_count"] = len(selected)
+        result["llm_diagnostics"] = diagnostics
+        return result
+
+    raise AssertionError("unreachable")

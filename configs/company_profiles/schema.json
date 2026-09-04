@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/hanwha-company-profile.schema.json",
+  "title": "Hanwha Runtime Company Profile",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "company_id",
+    "company_name",
+    "profile_updated_at",
+    "profile_summary",
+    "business_areas",
+    "revenue_drivers",
+    "strategic_priorities",
+    "risk_factors",
+    "watch_topics",
+    "rss_queries",
+    "business_tags",
+    "excluded_rules",
+    "sources"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "company_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "company_name": {"type": "string", "minLength": 1},
+    "profile_updated_at": {"type": "string", "format": "date"},
+    "profile_summary": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 5,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "business_areas": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 7,
+      "items": {"$ref": "#/$defs/namedItem"}
+    },
+    "revenue_drivers": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 7,
+      "items": {"$ref": "#/$defs/namedItem"}
+    },
+    "strategic_priorities": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 6,
+      "items": {"$ref": "#/$defs/strategyItem"}
+    },
+    "risk_factors": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 7,
+      "items": {"$ref": "#/$defs/riskItem"}
+    },
+    "watch_topics": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 6,
+      "items": {"$ref": "#/$defs/watchTopic"}
+    },
+    "rss_queries": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 8,
+      "items": {"$ref": "#/$defs/rssQuery"}
+    },
+    "business_tags": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 10,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "excluded_rules": {
+      "type": "array",
+      "minItems": 3,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 3,
+      "items": {"$ref": "#/$defs/source"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "namedItem": {
+      "type": "object",
+      "required": ["id", "name", "description", "source_ids"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "name": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "source_ids": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "strategyItem": {
+      "type": "object",
+      "required": ["id", "name", "status", "signals", "source_ids"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "name": {"type": "string", "minLength": 1},
+        "status": {"enum": ["active", "emerging", "monitor"]},
+        "signals": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "source_ids": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "riskItem": {
+      "type": "object",
+      "required": ["id", "name", "transmission", "source_ids"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "name": {"type": "string", "minLength": 1},
+        "transmission": {"type": "string", "minLength": 1},
+        "source_ids": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "watchTopic": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "why_it_matters",
+        "related_business_ids",
+        "transmission",
+        "importance_criteria",
+        "source_ids"
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "name": {"type": "string", "minLength": 1},
+        "why_it_matters": {"type": "string", "minLength": 1},
+        "related_business_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "transmission": {"type": "string", "minLength": 1},
+        "importance_criteria": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "source_ids": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "rssQuery": {
+      "type": "object",
+      "required": ["id", "language", "query", "topic_ids"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "language": {"enum": ["ko", "en"]},
+        "query": {"type": "string", "minLength": 1},
+        "topic_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": ["id", "title", "publisher", "published_at", "url"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^S[0-9]+$"},
+        "title": {"type": "string", "minLength": 1},
+        "publisher": {"type": "string", "minLength": 1},
+        "published_at": {"type": "string", "minLength": 1},
+        "url": {"type": "string", "pattern": "^https?://"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

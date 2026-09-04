@@ -7,7 +7,9 @@ import unittest
 from rag_finance.llm.trend_clusterer import (
     ALLOWED_BUSINESS_TAGS,
     TREND_COUNT,
+    TrendClusteringError,
     build_cluster_messages,
+    build_trend_response_format,
     cluster_trends,
     normalize_business_tags,
     parse_structured_json,
@@ -69,6 +71,22 @@ class PromptTest(unittest.TestCase):
             set(sent["articles"][0]),
             {"article_id", "title", "source", "published_at", "summary", "watch_area"},
         )
+        self.assertEqual(len(sent["output_contract"]["trends"]), TREND_COUNT)
+
+    def test_strict_schema_requires_all_fields_and_known_article_ids(self) -> None:
+        articles = _articles()
+        response_format = build_trend_response_format(articles)
+        self.assertEqual(response_format["type"], "json_schema")
+        self.assertTrue(response_format["json_schema"]["strict"])
+        schema = response_format["json_schema"]["schema"]
+        self.assertFalse(schema["additionalProperties"])
+        self.assertIn("trends", schema["required"])
+        trend_schema = schema["properties"]["trends"]["items"]
+        self.assertFalse(trend_schema["additionalProperties"])
+        self.assertEqual(
+            set(trend_schema["properties"]["article_ids"]["items"]["enum"]),
+            {item["article_id"] for item in articles},
+        )
 
     def test_selection_balances_areas_and_languages(self) -> None:
         selected = select_articles_for_llm(_articles(12), limit=6)
@@ -122,6 +140,10 @@ class ValidationTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_structured_json("not json")
 
+    def test_empty_trends_are_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "non-empty trends"):
+            validate_trend_payload({"trends": []}, _articles())
+
 
 class ClusterCallTest(unittest.TestCase):
     def test_cluster_trends_uses_the_injected_client(self) -> None:
@@ -135,7 +157,15 @@ class ClusterCallTest(unittest.TestCase):
                 self.called = True
                 self.kwargs = kwargs
                 return SimpleNamespace(
-                    choices=[SimpleNamespace(message=SimpleNamespace(content=body))]
+                    id="req-success",
+                    usage=SimpleNamespace(
+                        prompt_tokens=100, completion_tokens=50, total_tokens=150
+                    ),
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(content=body), finish_reason="stop"
+                        )
+                    ],
                 )
 
         completions = FakeCompletions()
@@ -146,6 +176,125 @@ class ClusterCallTest(unittest.TestCase):
         self.assertEqual(result["model"], "test-model")
         self.assertEqual(len(result["trends"]), TREND_COUNT)
         self.assertEqual(result["analyzed_article_count"], len(articles))
+        response_format = completions.kwargs["response_format"]
+        self.assertEqual(response_format["type"], "json_schema")
+        self.assertTrue(response_format["json_schema"]["strict"])
+        self.assertEqual(result["llm_diagnostics"]["attempts"][0]["request_id"], "req-success")
+        self.assertEqual(result["llm_diagnostics"]["attempts"][0]["usage"]["total_tokens"], 150)
+
+    def test_invalid_payload_is_corrected_on_retry(self) -> None:
+        articles = _articles()
+        responses = iter(
+            [
+                {"trends": []},
+                _payload(articles),
+            ]
+        )
+
+        class FakeCompletions:
+            def __init__(self) -> None:
+                self.calls: list[dict] = []
+
+            def create(self, **kwargs):
+                self.calls.append(kwargs)
+                body = json.dumps(next(responses), ensure_ascii=False)
+                return SimpleNamespace(
+                    id=f"req-{len(self.calls)}",
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(content=body), finish_reason="stop"
+                        )
+                    ],
+                )
+
+        completions = FakeCompletions()
+        client = SimpleNamespace(chat=SimpleNamespace(completions=completions))
+        result = cluster_trends(
+            articles, client=client, max_attempts=2, retry_base_delay=0
+        )
+
+        self.assertEqual(len(completions.calls), 2)
+        self.assertIn("이전 응답", completions.calls[1]["messages"][-1]["content"])
+        self.assertEqual(
+            [item["outcome"] for item in result["llm_diagnostics"]["attempts"]],
+            ["validation_error", "success"],
+        )
+
+    def test_repeated_invalid_payload_raises_with_safe_diagnostics(self) -> None:
+        class FakeCompletions:
+            def create(self, **kwargs):
+                return SimpleNamespace(
+                    id="req-empty",
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(content='{"trends": []}'),
+                            finish_reason="stop",
+                        )
+                    ],
+                )
+
+        client = SimpleNamespace(chat=SimpleNamespace(completions=FakeCompletions()))
+        with self.assertRaises(TrendClusteringError) as caught:
+            cluster_trends(
+                _articles(), client=client, max_attempts=2, retry_base_delay=0
+            )
+
+        diagnostics = caught.exception.diagnostics
+        self.assertEqual(len(diagnostics["attempts"]), 2)
+        self.assertEqual(diagnostics["attempts"][-1]["top_level_keys"], ["trends"])
+        self.assertNotIn("content", json.dumps(diagnostics))
+
+    def test_transient_api_error_retries_but_bad_request_does_not(self) -> None:
+        articles = _articles()
+        good_body = json.dumps(_payload(articles), ensure_ascii=False)
+
+        class ApiError(Exception):
+            def __init__(self, status_code: int) -> None:
+                self.status_code = status_code
+
+        class RetryCompletions:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def create(self, **kwargs):
+                self.calls += 1
+                if self.calls == 1:
+                    raise ApiError(429)
+                return SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(content=good_body),
+                            finish_reason="stop",
+                        )
+                    ]
+                )
+
+        retrying = RetryCompletions()
+        cluster_trends(
+            articles,
+            client=SimpleNamespace(chat=SimpleNamespace(completions=retrying)),
+            max_attempts=2,
+            retry_base_delay=0,
+        )
+        self.assertEqual(retrying.calls, 2)
+
+        class BadRequestCompletions:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def create(self, **kwargs):
+                self.calls += 1
+                raise ApiError(400)
+
+        bad_request = BadRequestCompletions()
+        with self.assertRaises(TrendClusteringError):
+            cluster_trends(
+                articles,
+                client=SimpleNamespace(chat=SimpleNamespace(completions=bad_request)),
+                max_attempts=2,
+                retry_base_delay=0,
+            )
+        self.assertEqual(bad_request.calls, 1)
 
     def test_too_few_articles_is_rejected(self) -> None:
         with self.assertRaises(ValueError):

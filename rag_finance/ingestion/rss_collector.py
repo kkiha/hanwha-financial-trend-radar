@@ -13,11 +13,17 @@ from datetime import datetime, timedelta, timezone
 from difflib import SequenceMatcher
 from email.utils import parsedate_to_datetime
 import hashlib
+from pathlib import Path
 import re
 import time
 from typing import Any, Iterable, Sequence
 import urllib.parse
 import xml.etree.ElementTree as ET
+
+from rag_finance.profiles.company_profiles import (
+    DEFAULT_PROFILES_DIR,
+    load_all_company_profiles,
+)
 
 
 # Broad areas rather than narrow questions, so the watch list does not go stale.
@@ -100,6 +106,13 @@ MAX_WORKERS = 8
 USER_AGENT = "HanwhaGlobalFinanceRadar/0.1 (prototype; RSS only)"
 TITLE_MATCH_RATIO = 0.86
 SUMMARY_MAX_CHARS = 320
+SOURCE_MODES = ("profiles", "common", "both")
+DEFAULT_SOURCE_MODE = "common"
+CANDIDATE_METADATA_FIELDS = (
+    "candidate_companies",
+    "matched_topic_ids",
+    "matched_query_ids",
+)
 
 # Why a collection produced nothing, so the caller can tell the user what to fix.
 REASON_OK = "ok"
@@ -123,6 +136,48 @@ class FeedSpec:
     language: str
     provider: str = "search"
     classify: bool = False
+    query_id: str | None = None
+    company_id: str | None = None
+    topic_ids: tuple[str, ...] = ()
+
+
+def _search_feed_url(query: str, language: str, window_days: int) -> str:
+    locale = FEED_LOCALES[language]
+    params = {
+        "q": f"{query} when:{max(1, int(window_days))}d",
+        "hl": locale["hl"],
+        "gl": locale["gl"],
+        "ceid": locale["ceid"],
+    }
+    return f"{GOOGLE_NEWS_SEARCH}?{urllib.parse.urlencode(params)}"
+
+
+def build_profile_feed_specs(
+    profiles: dict[str, dict[str, Any]] | None = None,
+    *,
+    profiles_dir: str | Path = DEFAULT_PROFILES_DIR,
+    window_days: int = DEFAULT_WINDOW_DAYS,
+) -> list[FeedSpec]:
+    """Build one Google News feed for every validated runtime profile query."""
+    loaded = profiles if profiles is not None else load_all_company_profiles(profiles_dir)
+    specs: list[FeedSpec] = []
+    for company_id in sorted(loaded):
+        profile = loaded[company_id]
+        for query in profile["rss_queries"]:
+            language = str(query["language"])
+            topic_ids = tuple(str(item) for item in query["topic_ids"])
+            specs.append(
+                FeedSpec(
+                    url=_search_feed_url(str(query["query"]), language, window_days),
+                    watch_area=topic_ids[0] if topic_ids else "company_profile",
+                    language=language,
+                    provider="profile_search",
+                    query_id=str(query["id"]),
+                    company_id=company_id,
+                    topic_ids=topic_ids,
+                )
+            )
+    return specs
 
 
 def classify_watch_area(text: str, default: str) -> str:
@@ -139,30 +194,42 @@ def build_feed_specs(
     *,
     window_days: int = DEFAULT_WINDOW_DAYS,
     include_backup: bool = True,
+    source_mode: str = DEFAULT_SOURCE_MODE,
+    profiles: dict[str, dict[str, Any]] | None = None,
+    profiles_dir: str | Path = DEFAULT_PROFILES_DIR,
 ) -> list[FeedSpec]:
-    """One search feed per watch area per language, plus direct publisher feeds."""
+    """Build common, profile-specific, or combined RSS feed specifications."""
+    if source_mode not in SOURCE_MODES:
+        raise ValueError(
+            f"Invalid RSS source_mode {source_mode!r}; expected one of {', '.join(SOURCE_MODES)}"
+        )
     areas = watch_areas or WATCH_AREAS
     specs: list[FeedSpec] = []
-    for area_key, area in areas.items():
-        for language, locale in FEED_LOCALES.items():
-            query = area.get(locale["query_key"], "")
-            if not query:
-                continue
-            params = {
-                "q": f"{query} when:{max(1, int(window_days))}d",
-                "hl": locale["hl"],
-                "gl": locale["gl"],
-                "ceid": locale["ceid"],
-            }
-            specs.append(
-                FeedSpec(
-                    url=f"{GOOGLE_NEWS_SEARCH}?{urllib.parse.urlencode(params)}",
-                    watch_area=area_key,
-                    language=language,
+    if source_mode in {"common", "both"}:
+        for area_key, area in areas.items():
+            for language, locale in FEED_LOCALES.items():
+                query = area.get(locale["query_key"], "")
+                if not query:
+                    continue
+                specs.append(
+                    FeedSpec(
+                        url=_search_feed_url(query, language, window_days),
+                        watch_area=area_key,
+                        language=language,
+                        query_id=f"common_{area_key}_{language}",
+                    )
                 )
-            )
 
-    if include_backup:
+    if source_mode in {"profiles", "both"}:
+        specs.extend(
+            build_profile_feed_specs(
+                profiles,
+                profiles_dir=profiles_dir,
+                window_days=window_days,
+            )
+        )
+
+    if include_backup and source_mode in {"common", "both"}:
         specs.extend(
             FeedSpec(
                 url=feed["url"],
@@ -338,32 +405,48 @@ def within_window(
 
 
 def dedupe_articles(articles: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Drop repeats: same URL, then near-identical headlines (syndication)."""
+    """Drop repeats while merging profile-query candidate metadata."""
     kept: list[dict[str, Any]] = []
-    seen_urls: set[str] = set()
-    seen_titles: set[str] = set()
-    normalized_kept: list[str] = []
+    by_url: dict[str, dict[str, Any]] = {}
+    by_title: dict[str, dict[str, Any]] = {}
+    normalized_kept: list[tuple[str, dict[str, Any]]] = []
+
+    def merge_metadata(target: dict[str, Any], source: dict[str, Any]) -> None:
+        for field in CANDIDATE_METADATA_FIELDS:
+            values = list(target.get(field) or []) + list(source.get(field) or [])
+            target[field] = sorted({str(value) for value in values if str(value).strip()})
 
     for article in sorted(
         articles, key=lambda item: str(item.get("published_at") or ""), reverse=True
     ):
-        url_key = canonical_url(article.get("url"))
-        if url_key and url_key in seen_urls:
-            continue
+        entry = dict(article)
+        merge_metadata(entry, {})
+        url_key = canonical_url(entry.get("url"))
+        duplicate = by_url.get(url_key) if url_key else None
         title_key = normalize_title(article.get("title"))
-        if not title_key or title_key in seen_titles:
+        if duplicate is None and title_key:
+            duplicate = by_title.get(title_key)
+        if duplicate is None and title_key:
+            duplicate = next(
+                (
+                    existing_article
+                    for existing_title, existing_article in normalized_kept
+                    if SequenceMatcher(None, title_key, existing_title).ratio()
+                    >= TITLE_MATCH_RATIO
+                ),
+                None,
+            )
+        if duplicate is not None:
+            merge_metadata(duplicate, entry)
             continue
-        if any(
-            SequenceMatcher(None, title_key, existing).ratio() >= TITLE_MATCH_RATIO
-            for existing in normalized_kept
-        ):
+        if not title_key:
             continue
 
         if url_key:
-            seen_urls.add(url_key)
-        seen_titles.add(title_key)
-        normalized_kept.append(title_key)
-        kept.append(article)
+            by_url[url_key] = entry
+        by_title[title_key] = entry
+        normalized_kept.append((title_key, entry))
+        kept.append(entry)
 
     kept.sort(key=lambda item: str(item.get("published_at") or ""), reverse=True)
     return kept
@@ -394,6 +477,9 @@ def _fetch_one(
         "ok": False,
         "count": 0,
         "attempts": 0,
+        "query_id": spec.query_id,
+        "company_id": spec.company_id,
+        "topic_ids": list(spec.topic_ids),
     }
     last_error: Exception | None = None
 
@@ -423,6 +509,11 @@ def _fetch_one(
                     f"{article.get('title', '')} {article.get('summary', '')}",
                     spec.watch_area,
                 )
+        if spec.company_id:
+            for article in parsed:
+                article["candidate_companies"] = [spec.company_id]
+                article["matched_topic_ids"] = list(spec.topic_ids)
+                article["matched_query_ids"] = [spec.query_id] if spec.query_id else []
         # A provider that throttles answers 200 with a valid but item-less feed,
         # so "responded" and "returned articles" have to be tracked separately.
         report.update(ok=True, count=len(parsed), empty=not parsed, articles=parsed)
@@ -444,11 +535,19 @@ def collect_articles(
     retries: int = DEFAULT_RETRIES,
     max_workers: int = MAX_WORKERS,
     include_backup: bool = True,
+    source_mode: str = DEFAULT_SOURCE_MODE,
+    profiles: dict[str, dict[str, Any]] | None = None,
+    profiles_dir: str | Path = DEFAULT_PROFILES_DIR,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Fetch every feed in parallel; one failing feed must not stop the collection."""
     reference = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     specs = build_feed_specs(
-        watch_areas, window_days=window_days, include_backup=include_backup
+        watch_areas,
+        window_days=window_days,
+        include_backup=include_backup,
+        source_mode=source_mode,
+        profiles=profiles,
+        profiles_dir=profiles_dir,
     )
     started = time.perf_counter()
 
@@ -492,6 +591,9 @@ def collect_articles(
     debug = {
         "collected_at": reference.isoformat(),
         "window_days": window_days,
+        "source_mode": source_mode,
+        "profile_count": len({spec.company_id for spec in specs if spec.company_id}),
+        "query_count": sum(1 for spec in specs if spec.provider != "direct"),
         "feeds_total": len(specs),
         "feeds_ok": len(ok_reports),
         "feeds_with_articles": len(with_articles),
@@ -511,6 +613,16 @@ def collect_articles(
         "language_counts": {
             language: sum(1 for item in articles if item.get("language") == language)
             for language in FEED_LOCALES
+        },
+        "company_candidate_counts": {
+            company_id: sum(
+                1
+                for article in articles
+                if company_id in (article.get("candidate_companies") or [])
+            )
+            for company_id in sorted(
+                {spec.company_id for spec in specs if spec.company_id}
+            )
         },
         "reason": reason,
         "elapsed_seconds": round(time.perf_counter() - started, 2),

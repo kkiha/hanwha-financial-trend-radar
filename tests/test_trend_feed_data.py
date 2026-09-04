@@ -13,7 +13,9 @@ from app.trend_feed_data import (
     daily_counts,
     load_trend_feed,
     rank_trends,
+    save_company_briefs,
     save_live_payload,
+    save_refresh_status,
 )
 
 NOW = datetime(2026, 9, 3, 12, 0, tzinfo=timezone.utc)
@@ -122,6 +124,22 @@ class LoadingTest(unittest.TestCase):
             payload = load_trend_feed(live_path=live, now=NOW)
         self.assertEqual(payload["status"], "CACHED")
 
+    def test_latest_refresh_attempt_is_loaded_separately_from_live_data(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            live = Path(tmp) / "latest_trends.json"
+            live.write_text(json.dumps(_live_payload(), ensure_ascii=False), encoding="utf-8")
+            refresh = {
+                "attempted_at": NOW.isoformat(),
+                "outcome": "failed",
+                "message": "AI 분석 요청 실패",
+            }
+            save_refresh_status(refresh, live_dir=Path(tmp))
+            payload = load_trend_feed(live_path=live, now=NOW)
+
+        self.assertEqual(payload["status"], "LIVE")
+        self.assertEqual(payload["refresh"]["outcome"], "failed")
+        self.assertEqual(payload["refresh"]["attempted_at"], NOW.isoformat())
+
     def test_missing_live_file_falls_back_to_demo(self) -> None:
         payload = load_trend_feed(live_path=Path("does/not/exist.json"), now=NOW)
         self.assertEqual(payload["status"], "DEMO")
@@ -159,6 +177,17 @@ class FallbackFileTest(unittest.TestCase):
 
 
 class SaveTest(unittest.TestCase):
+    def test_company_briefs_are_atomically_saved(self) -> None:
+        payload = {"status": "GENERATED", "companies": []}
+        with tempfile.TemporaryDirectory() as tmp:
+            target = save_company_briefs(payload, live_dir=Path(tmp))
+            written = json.loads(target.read_text(encoding="utf-8"))
+            leftovers = list(Path(tmp).glob("*.tmp"))
+
+        self.assertEqual(target.name, "latest_company_briefs.json")
+        self.assertEqual(written, payload)
+        self.assertEqual(leftovers, [])
+
     def test_save_writes_both_runtime_files(self) -> None:
         raw = _live_payload()
         with tempfile.TemporaryDirectory() as tmp:
@@ -175,6 +204,33 @@ class SaveTest(unittest.TestCase):
         self.assertFalse(written["is_synthetic"])
         self.assertEqual(written["collection"]["feeds_ok"], 6)
         self.assertEqual(len(written["articles"]), 5)
+
+    def test_save_includes_sanitized_llm_diagnostics(self) -> None:
+        raw = _live_payload()
+        diagnostics = {
+            "attempts": [
+                {
+                    "attempt": 1,
+                    "request_id": "req-1",
+                    "finish_reason": "stop",
+                    "top_level_keys": ["generated_at", "trends", "window_days"],
+                }
+            ]
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            target = save_live_payload(
+                {
+                    "generated_at": NOW.isoformat(),
+                    "window_days": 7,
+                    "trends": raw["trends"],
+                    "llm_diagnostics": diagnostics,
+                },
+                raw["articles"],
+                live_dir=Path(tmp),
+            )
+            written = json.loads(target.read_text(encoding="utf-8"))
+
+        self.assertEqual(written["llm_diagnostics"], diagnostics)
 
     def test_build_payload_skips_trends_without_linked_articles(self) -> None:
         raw = _live_payload()

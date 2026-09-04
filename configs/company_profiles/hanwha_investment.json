@@ -1,0 +1,266 @@
+{
+  "schema_version": "1.0",
+  "company_id": "hanwha_investment",
+  "company_name": "한화투자증권",
+  "profile_updated_at": "2026-09-03",
+  "profile_summary": [
+    "WM·브로커리지, Wholesale, Trading과 IB가 핵심 수익 축이며 시장활동 변화에 민감하다.",
+    "거래대금·NXT, 부동산 PF·NCR, 채권·크레딧 환경은 단기 실적과 자본효율에 직접 연결된다.",
+    "퇴직연금, RWA·토큰증권, AI·디지털플랫폼과 동남아 사업은 차별적인 성장 감시영역이다.",
+    "한화투자증권 리서치센터가 타사를 분석한 기사는 회사 자체의 전략 뉴스와 분리해야 한다."
+  ],
+  "business_areas": [
+    {
+      "id": "wm_brokerage",
+      "name": "WM·브로커리지",
+      "description": "국내외 주식 중개, 신용융자와 자산관리 서비스를 통해 수수료·이자수익을 창출한다.",
+      "source_ids": ["S3", "S4"]
+    },
+    {
+      "id": "wholesale_trading",
+      "name": "Wholesale·Trading",
+      "description": "법인영업, 채권·파생·구조화상품 운용과 헤지를 수행한다.",
+      "source_ids": ["S3", "S4"]
+    },
+    {
+      "id": "ib_pf",
+      "name": "IB·부동산PF",
+      "description": "기업금융, DCM·ECM과 구조화금융·부동산PF를 수행하며 수수료와 신용위험이 함께 발생한다.",
+      "source_ids": ["S3", "S5"]
+    },
+    {
+      "id": "retirement_hnw",
+      "name": "퇴직연금·HNW 자산관리",
+      "description": "DC·IRP와 고액자산가 서비스를 통해 고객자산과 장기 수수료 기반을 확대한다.",
+      "source_ids": ["S10", "S11"]
+    },
+    {
+      "id": "rwa_digital",
+      "name": "RWA·디지털자산·AI 플랫폼",
+      "description": "토큰증권, 디지털자산 정보와 AI 기반 MTS·업무자동화를 성장영역으로 추진한다.",
+      "source_ids": ["S6", "S7", "S8", "S9"]
+    },
+    {
+      "id": "southeast_asia",
+      "name": "동남아 금융사업",
+      "description": "베트남 Pinetree와 인도네시아 Ciptadana 등을 통해 증권·자산운용·IB 사업을 확장한다.",
+      "source_ids": ["S12", "S13"]
+    }
+  ],
+  "revenue_drivers": [
+    {
+      "id": "brokerage_activity",
+      "name": "거래대금·브로커리지",
+      "description": "주식 거래대금, 고객활동과 신용융자가 위탁매매 및 이자수익에 영향을 준다.",
+      "source_ids": ["S4", "S16"]
+    },
+    {
+      "id": "customer_assets",
+      "name": "고객자산·금융상품 판매",
+      "description": "WM·HNW·퇴직연금 고객자산과 금융상품 판매가 반복 수수료 기반을 만든다.",
+      "source_ids": ["S10", "S11"]
+    },
+    {
+      "id": "trading_profit",
+      "name": "Trading·FICC 손익",
+      "description": "금리·신용스프레드·변동성과 헤지비용이 채권·파생 운용손익을 움직인다.",
+      "source_ids": ["S3", "S4"]
+    },
+    {
+      "id": "ib_fees",
+      "name": "IB·기업금융 수수료",
+      "description": "IPO·채권발행·M&A·금융주선과 PF 딜이 인수 및 자문수수료를 창출한다.",
+      "source_ids": ["S3", "S13"]
+    },
+    {
+      "id": "credit_cost",
+      "name": "PF·신용비용",
+      "description": "PF 사업성, 연체·회수와 충당금이 IB 수익성과 자본에 부정적으로 전이될 수 있다.",
+      "source_ids": ["S5", "S15"]
+    },
+    {
+      "id": "overseas_earnings",
+      "name": "해외법인 손익",
+      "description": "동남아 증권·자산운용 법인의 고객·딜·시장환경이 연결 실적을 다변화한다.",
+      "source_ids": ["S12", "S13"]
+    }
+  ],
+  "strategic_priorities": [
+    {
+      "id": "rwa_hub",
+      "name": "Global No.1 RWA Hub",
+      "status": "emerging",
+      "signals": ["토큰증권 법제화", "기관형 블록체인", "실제 RWA 발행·유통 계약"],
+      "source_ids": ["S6", "S7", "S8", "S14"]
+    },
+    {
+      "id": "retirement_growth",
+      "name": "퇴직연금·HNW 확대",
+      "status": "active",
+      "signals": ["연금자산", "DC·IRP 순유입", "연금상담·비대면 서비스"],
+      "source_ids": ["S10", "S11"]
+    },
+    {
+      "id": "digital_platform",
+      "name": "AI·디지털 투자플랫폼 고도화",
+      "status": "active",
+      "signals": ["AI 공시·신용분석", "MTS 기능", "고객보호·모델검증"],
+      "source_ids": ["S9", "S18"]
+    },
+    {
+      "id": "southeast_asia_expansion",
+      "name": "동남아 금융사업 확대",
+      "status": "active",
+      "signals": ["Pinetree·Ciptadana", "OJK·베트남 규제", "현지 딜·고객"],
+      "source_ids": ["S12", "S13"]
+    },
+    {
+      "id": "capital_efficiency",
+      "name": "IB 리스크와 자본효율 관리",
+      "status": "active",
+      "signals": ["PF 회수·충당금", "NCR", "잉여자본·총위험액"],
+      "source_ids": ["S2", "S5", "S15"]
+    }
+  ],
+  "risk_factors": [
+    {
+      "id": "brokerage_cycle_risk",
+      "name": "시장활동 둔화",
+      "transmission": "거래대금과 고객활동 감소가 WM·브로커리지 및 신용공여 수익을 약화시킨다.",
+      "source_ids": ["S4", "S16"]
+    },
+    {
+      "id": "trading_hedge_risk",
+      "name": "Trading·헤지 위험",
+      "transmission": "금리·신용·변동성 급변이 채권·파생 평가손익과 헤지비용을 악화시킬 수 있다.",
+      "source_ids": ["S3", "S4"]
+    },
+    {
+      "id": "pf_credit_risk",
+      "name": "부동산PF 신용·충당금",
+      "transmission": "사업성 악화와 연체·재구조화가 충당금, 손실과 신규 딜 여력을 악화시킨다.",
+      "source_ids": ["S5", "S15"]
+    },
+    {
+      "id": "capital_liquidity_risk",
+      "name": "자본·유동성",
+      "transmission": "PF·Trading·전략투자 위험액 확대가 NCR, 잉여자본과 조달비용에 영향을 준다.",
+      "source_ids": ["S2", "S15"]
+    },
+    {
+      "id": "rwa_regulatory_risk",
+      "name": "RWA 규제·상용화",
+      "transmission": "법 시행, 인가범위와 시장 인프라가 증권사의 RWA 역할과 수익화 시점을 결정한다.",
+      "source_ids": ["S6", "S14"]
+    },
+    {
+      "id": "overseas_operating_risk",
+      "name": "해외법인·현지규제",
+      "transmission": "동남아 시장 변동, 현지 감독규제와 환율이 해외법인 성장 및 건전성에 전이된다.",
+      "source_ids": ["S12", "S13"]
+    }
+  ],
+  "watch_topics": [
+    {
+      "id": "investment_brokerage_nxt",
+      "name": "거래대금·NXT·브로커리지",
+      "why_it_matters": "시장활동 변화가 WM·Wholesale 수익과 MTS 경쟁에 직접 연결된다.",
+      "related_business_ids": ["wm_brokerage", "wholesale_trading"],
+      "transmission": "KRX·NXT 거래대금, 거래시간과 수수료 경쟁이 위탁매매·신용융자 수익을 움직인다.",
+      "importance_criteria": ["거래대금의 구조적 변화", "NXT·ATS 제도 및 라우팅 변화", "증권사 수수료·점유율 경쟁"],
+      "source_ids": ["S4", "S16"]
+    },
+    {
+      "id": "investment_pf_ncr",
+      "name": "부동산PF·충당금·NCR",
+      "why_it_matters": "과거 PF 손실과 규제 변화가 IB 수익, 위험액과 자본효율에 연결됐다.",
+      "related_business_ids": ["ib_pf"],
+      "transmission": "PF 사업성·회수·규제 변화가 충당금, 딜 여력, NCR과 잉여자본을 바꾼다.",
+      "importance_criteria": ["증권사 PF 대형 손실·회수", "NCR 위험값 변경", "충당금·상각·재구조화"],
+      "source_ids": ["S2", "S5", "S15"]
+    },
+    {
+      "id": "investment_rwa",
+      "name": "RWA·토큰증권 제도화",
+      "why_it_matters": "회사가 명시한 중장기 전략이지만 실제 사업범위와 수익화는 규제·인프라에 좌우된다.",
+      "related_business_ids": ["rwa_digital"],
+      "transmission": "법령·인가·시장 인프라와 파트너십이 RWA 발행·유통 사업의 실행 가능성을 결정한다.",
+      "importance_criteria": ["토큰증권 법령·시행령·인가 확정", "증권사 RWA 플랫폼·계약", "기관형 블록체인 인프라"],
+      "source_ids": ["S6", "S7", "S8", "S14"]
+    },
+    {
+      "id": "investment_retirement",
+      "name": "퇴직연금 DC·IRP 자금 이동",
+      "why_it_matters": "연금자산과 비대면 전문조직이 WM의 장기 고객자산 성장축으로 확인된다.",
+      "related_business_ids": ["retirement_hnw", "wm_brokerage"],
+      "transmission": "실물이전·디폴트옵션·수수료 경쟁이 DC·IRP 순유입과 고객 유지비용에 영향을 준다.",
+      "importance_criteria": ["사업자 간 대규모 자금 이동", "퇴직연금 제도 변경", "증권사 수익률·수수료 경쟁"],
+      "source_ids": ["S10", "S11"]
+    },
+    {
+      "id": "investment_trading_credit",
+      "name": "채권·크레딧·파생 운용환경",
+      "why_it_matters": "금리·신용·변동성이 Trading 손익과 IB 발행시장에 동시에 전이된다.",
+      "related_business_ids": ["wholesale_trading", "ib_pf"],
+      "transmission": "신용스프레드·변동성·헤지비용 변화가 평가손익과 구조화상품·채권발행 여건을 바꾼다.",
+      "importance_criteria": ["증권사 평가손익·헤지비용 변화", "ELS·파생 발행 또는 규제 변화", "크레딧 손실·발행시장 위축"],
+      "source_ids": ["S3", "S4"]
+    },
+    {
+      "id": "investment_southeast_asia_ai",
+      "name": "동남아 사업·AI 디지털플랫폼",
+      "why_it_matters": "해외법인과 AI 기반 MTS는 한화투자증권의 차별적인 성장 및 운영 감시영역이다.",
+      "related_business_ids": ["southeast_asia", "rwa_digital"],
+      "transmission": "현지 금융규제·딜과 AI 서비스·고객보호 규칙이 해외 성장과 디지털 경쟁력에 영향을 준다.",
+      "importance_criteria": ["Pinetree·Ciptadana 직접 사건", "OJK·베트남 증권규제", "증권사 AI 서비스 출시·사고·규제"],
+      "source_ids": ["S9", "S12", "S13", "S18"]
+    }
+  ],
+  "rss_queries": [
+    {"id": "investment_ko_01", "language": "ko", "query": "증권사 (거래대금 OR 브로커리지 OR 신용융자 OR NXT OR 넥스트레이드)", "topic_ids": ["investment_brokerage_nxt"]},
+    {"id": "investment_ko_02", "language": "ko", "query": "증권사 부동산PF (충당금 OR NCR OR 사업성평가 OR 재구조화)", "topic_ids": ["investment_pf_ncr"]},
+    {"id": "investment_ko_03", "language": "ko", "query": "증권사 (RWA OR 토큰증권 OR STO OR 디지털자산기본법)", "topic_ids": ["investment_rwa"]},
+    {"id": "investment_ko_04", "language": "ko", "query": "한화투자증권 (퇴직연금 OR 채권 OR Pinetree OR Ciptadana OR AI OR MTS)", "topic_ids": ["investment_retirement", "investment_trading_credit", "investment_southeast_asia_ai"]},
+    {"id": "investment_en_01", "language": "en", "query": "Korea securities firms (trading value OR brokerage OR NXT OR ATS OR margin finance)", "topic_ids": ["investment_brokerage_nxt"]},
+    {"id": "investment_en_02", "language": "en", "query": "Korea securities firms real estate PF (NCR OR provisions OR restructuring)", "topic_ids": ["investment_pf_ncr"]},
+    {"id": "investment_en_03", "language": "en", "query": "Korea securities firms (RWA OR tokenized securities OR STO OR digital asset law)", "topic_ids": ["investment_rwa"]},
+    {"id": "investment_en_04", "language": "en", "query": "Hanwha Investment Securities (retirement pension OR bonds OR Pinetree OR Ciptadana OR AI OR MTS)", "topic_ids": ["investment_retirement", "investment_trading_credit", "investment_southeast_asia_ai"]}
+  ],
+  "business_tags": [
+    "WM·브로커리지",
+    "HNW·퇴직연금",
+    "Wholesale·법인영업",
+    "Trading·FICC/파생",
+    "IB·기업금융",
+    "부동산PF·자본건전성",
+    "RWA·토큰증권",
+    "AI·디지털플랫폼",
+    "글로벌·동남아"
+  ],
+  "excluded_rules": [
+    "한화투자증권 연구원·리서치센터가 타사 목표주가와 투자의견을 제시한 기사는 제외한다.",
+    "한화투자증권 자체 주가의 급등·저평가·매수추천만 다루는 기사는 제외한다.",
+    "코인 가격·급등 전망·에어드롭 등은 증권사 사업 또는 규제 변화가 없으면 제외한다.",
+    "보험·방산·조선·태양광 등 다른 한화 계열사 단독 기사는 증권사의 딜·투자·주관 역할이 없으면 제외한다.",
+    "고객 이벤트·경품·일반 채용·사회공헌은 전략 실행을 입증하지 않으면 제외한다.",
+    "단순 금리·주가·환율 전망은 Trading·IB·브로커리지 등 구체적인 전이경로가 없으면 제외한다."
+  ],
+  "sources": [
+    {"id": "S2", "title": "2026년 2분기 순자본비율 및 잉여자본 공시", "publisher": "한화투자증권", "published_at": "2026-08-14", "url": "https://www.hanwhawm.com/main/bbs/indexView.cmd?cc_gubun=&dt_regdate=2026%2F08%2F03&mode=&nn_id=266&vc_bid=hanwha5"},
+    {"id": "S3", "title": "제65기 감사보고서", "publisher": "한화투자증권·안진회계법인", "published_at": "2026-03-10", "url": "https://www.hanwhawm.com/main/common/common_file/fileView.cmd?category=1&dir=notice%2F2026%2F03&file=20260310052344599.pdf&store=20260310052344599.pdf"},
+    {"id": "S4", "title": "2025년 3분기 분기보고서", "publisher": "한국거래소 KIND", "published_at": "2025-11-13", "url": "https://kind.krx.co.kr/common/disclsviewer.do?acptNo=20251113001019&docno=&method=searchInitInfo"},
+    {"id": "S5", "title": "2024년 영업보고서", "publisher": "한화투자증권", "published_at": "2025-03-11", "url": "https://www.hanwhawm.com/main/common/common_file/fileView.cmd?category=1&dir=notice%2F2025%2F03&file=20250311043844291.pdf&store=20250311043844291.pdf"},
+    {"id": "S6", "title": "2026년 경영전략회의 Global No.1 RWA Hub 비전", "publisher": "한화투자증권", "published_at": "2025-12-18", "url": "https://www.hanwhawm.com/main/bbs/indexView.cmd?cc_gubun=&dt_regdate=2025%2F12%2F16&mode=&nn_id=47809&vc_bid=hanwha1"},
+    {"id": "S7", "title": "디지털자산 데이터 플랫폼 쟁글 전략 투자", "publisher": "한화투자증권", "published_at": "2026-02-05", "url": "https://www.hanwhawm.com/main/bbs/indexView.cmd?cc_gubun=&dt_regdate=2026%2F02%2F05&mode=&nn_id=47818&vc_bid=hanwha1"},
+    {"id": "S8", "title": "Digital Asset Holdings와 MOU 체결", "publisher": "한화투자증권", "published_at": "2026-04-20", "url": "https://www.hanwhawm.com/main/bbs/indexView.cmd?cc_gubun=&dt_regdate=2026%2F04%2F16&mode=&nn_id=47832&vc_bid=hanwha1"},
+    {"id": "S9", "title": "디지털자산 정보를 포함한 MTS 개편", "publisher": "한화투자증권", "published_at": "2026-05-27", "url": "https://www.hanwhawm.com/main/bbs/indexView.cmd?cc_gubun=&dt_regdate=2026%2F05%2F26&mode=&nn_id=47839&vc_bid=hanwha1"},
+    {"id": "S10", "title": "연금자산 2조원 돌파", "publisher": "한화투자증권", "published_at": "2026-01-12", "url": "https://www.hanwhawm.com/main/bbs/indexView.cmd?cc_gubun=&dt_regdate=2026%2F01%2F14&mode=&nn_id=47812&vc_bid=hanwha1"},
+    {"id": "S11", "title": "고객 맞춤형 연금상담센터 신설", "publisher": "한화투자증권", "published_at": "2026-07-28", "url": "https://www.hanwhawm.com/main/bbs/indexView.cmd?cc_gubun=&dt_regdate=2026%2F08%2F10&mode=&nn_id=47845&vc_bid=hanwha1"},
+    {"id": "S12", "title": "인도네시아 칩타다나자산운용 인수", "publisher": "한화투자증권", "published_at": "2025-12-16", "url": "https://www.hanwhawm.com/main/bbs/indexView.cmd?cc_gubun=&dt_regdate=2025%2F12%2F15&mode=&nn_id=47808&vc_bid=hanwha1"},
+    {"id": "S13", "title": "해외 니켈 제련소 지분 인수 자문", "publisher": "한화투자증권", "published_at": "2026-01-07", "url": "https://www.hanwhawm.com/main/bbs/indexView.cmd?cc_gubun=&dt_regdate=2026%2F01%2F12&mode=&nn_id=47811&vc_bid=hanwha1"},
+    {"id": "S14", "title": "토큰증권 협의체 Kick-off", "publisher": "금융위원회", "published_at": "2026-03-04", "url": "https://www.fsc.go.kr/po010106/86371"},
+    {"id": "S15", "title": "부동산PF 상황 점검회의", "publisher": "금융위원회", "published_at": "2026-07-03", "url": "https://www.fsc.go.kr/po010101/87252?curPage=1"},
+    {"id": "S16", "title": "한화투자증권 2026년 상반기 부문별 실적", "publisher": "더팩트", "published_at": "2026-08-13", "url": "https://news.tf.co.kr/read/economy/2354031.htm"},
+    {"id": "S18", "title": "디지털 혁신 AI 경진대회", "publisher": "한화투자증권", "published_at": "2026-06-01", "url": "https://www.hanwhawm.com/main/bbs/indexView.cmd?cc_gubun=&dt_regdate=2026%2F07%2F02&mode=&nn_id=47840&vc_bid=hanwha1"}
+  ]
+}
