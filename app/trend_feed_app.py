@@ -236,26 +236,47 @@ st.markdown(
 
     /* Company Intelligence */
     .gf-ci-head {
-        border-top: 1px solid var(--gf-line); margin-top: 2.2rem;
-        padding-top: 1.5rem; margin-bottom: 0.8rem;
+        position: relative; overflow: hidden; isolation: isolate;
+        background: #182B42; border-left: 4px solid var(--gf-orange);
+        border-radius: 0.85rem; margin: 3.2rem 0 1.3rem; padding: 1.8rem 2rem;
+        box-shadow: 0 8px 24px rgba(24, 43, 66, 0.08);
+    }
+    .gf-ci-head::after {
+        content: "BRIEFING"; position: absolute; right: 1.2rem; bottom: -1.4rem;
+        font-size: clamp(3rem, 8vw, 7rem); font-weight: 800; letter-spacing: 0.02em;
+        color: rgba(255, 255, 255, 0.045); z-index: -1; pointer-events: none;
     }
     .gf-ci-kicker {
         font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em;
-        text-transform: uppercase; color: var(--gf-orange-ink);
+        text-transform: uppercase; color: #FFAC67;
     }
     .gf-ci-title {
-        font-size: 1.4rem; font-weight: 700; color: var(--gf-ink);
-        letter-spacing: -0.02em; margin-top: 0.2rem;
+        font-size: 1.7rem; font-weight: 700; color: #FFFFFF;
+        letter-spacing: -0.03em; margin-top: 0.5rem;
     }
     .gf-ci-intro {font-size: 0.82rem; color: var(--gf-ink-3); margin-top: 0.25rem;}
-    .gf-ci-company {padding: 0.85rem 0 0.65rem;}
+    .gf-ci-head .gf-ci-intro {color: #C2CBD6; line-height: 1.7; margin-top: 0.6rem;}
+    .gf-ci-company {padding: 1.5rem 0 1rem;}
+    .gf-ci-eyebrow {font-size: 0.64rem; font-weight: 700; letter-spacing: 0.14em; color: #637184;}
     .gf-ci-company-name {
-        font-size: 1.25rem; font-weight: 700; color: var(--gf-ink);
-        letter-spacing: -0.02em;
+        font-size: 1.85rem; font-weight: 700; color: #182B42;
+        letter-spacing: -0.03em; margin-top: 0.2rem;
+    }
+    .gf-ci-overview {
+        background: #EDEFF2; border: 1px solid #DDE2E8;
+        border-radius: 0.7rem; padding: 1.15rem 1.4rem; margin-bottom: 0.5rem;
+        display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: 0.5rem 1.2rem;
+    }
+    .gf-ci-overview-label {font-size: 0.75rem; font-weight: 700; color: #34465B; padding-top: 0.15rem;}
+    .gf-ci-overview-label span {display: block; font-size: 0.58rem; letter-spacing: 0.1em; color: #637184; margin-top: 0.3rem;}
+    .gf-ci-overview--unavailable {background: #F0EFEC; border-color: var(--gf-line);}
+    .gf-ci-empty {
+        border: 1px dashed #C9CED5; border-radius: 0.7rem; padding: 1.3rem 1.5rem;
+        color: var(--gf-ink-2); font-size: 0.84rem; line-height: 1.75;
     }
     .gf-ci-summary {
-        max-width: 920px; font-size: 0.92rem; color: var(--gf-ink-2);
-        line-height: 1.75; margin-top: 0.35rem;
+        max-width: 920px; font-size: 0.95rem; color: #25384D;
+        line-height: 1.8; overflow-wrap: anywhere;
     }
     .gf-ci-alert {
         border-left: 3px solid var(--gf-orange); background: #FFF8F1;
@@ -263,54 +284,75 @@ st.markdown(
         border-radius: 0 0.35rem 0.35rem 0; font-size: 0.82rem; line-height: 1.6;
     }
     .gf-ci-subhead {
-        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em;
-        text-transform: uppercase; color: var(--gf-ink-3); margin: 0.9rem 0 0.5rem;
+        font-size: 0.92rem; font-weight: 700; letter-spacing: 0.015em;
+        color: #182B42; margin: 1.8rem 0 0.7rem;
+        display: flex; align-items: baseline; gap: 0.65rem;
     }
+    .gf-ci-subhead span {font-size: 0.73rem; font-weight: 400; letter-spacing: 0; color: var(--gf-ink-3);}
     .gf-brief-card {
         background: var(--gf-card); border: 1px solid var(--gf-line);
-        border-top: 3px solid var(--gf-orange); border-radius: 0.5rem;
-        padding: 1.1rem 1.2rem; margin: 0.65rem 0 0.45rem;
+        border-top: 3px solid #263F5B; border-radius: 0.8rem;
+        padding: 1.6rem 1.7rem; margin: 0.7rem 0 0.55rem;
+        box-shadow: 0 4px 18px rgba(24, 43, 66, 0.045); overflow-wrap: anywhere;
     }
     .gf-brief-top {display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;}
     .gf-brief-title {
-        font-size: 1.12rem; font-weight: 700; color: var(--gf-ink);
-        line-height: 1.45; letter-spacing: -0.015em;
+        font-size: 1.3rem; font-weight: 700; color: #182B42;
+        line-height: 1.5; letter-spacing: -0.025em;
     }
     .gf-proof {
         flex: 0 0 auto; font-size: 0.68rem; font-weight: 600;
-        color: #2E6B4A; background: #EAF4EE; border-radius: 999px;
+        color: #43576D; background: #EDF1F5; border-radius: 999px;
         padding: 0.18rem 0.55rem;
     }
     .gf-brief-situation {
-        font-size: 0.88rem; line-height: 1.68; color: var(--gf-ink-2);
-        margin-top: 0.7rem;
+        font-size: 0.92rem; line-height: 1.8; color: var(--gf-ink-2);
+        margin-top: 1.2rem;
     }
     .gf-brief-grid {
         display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.75rem; margin-top: 0.85rem;
+        gap: 1.4rem; margin-top: 1.3rem; padding-top: 1.2rem; border-top: 1px solid var(--gf-line);
     }
-    .gf-brief-field {background: #F8F7F3; border-radius: 0.35rem; padding: 0.7rem 0.78rem;}
+    .gf-brief-field {min-width: 0;}
     .gf-brief-label {
-        font-size: 0.63rem; font-weight: 700; letter-spacing: 0.07em;
-        color: var(--gf-ink-3); margin-bottom: 0.25rem;
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
+        color: #637184; margin-bottom: 0.45rem;
     }
-    .gf-brief-value {font-size: 0.82rem; line-height: 1.62; color: var(--gf-ink-2);}
+    .gf-brief-value {font-size: 0.88rem; line-height: 1.8; color: var(--gf-ink-2);}
     .gf-ci-tags {margin-top: 0.75rem;}
     .gf-ci-tag {
         display: inline-block; font-size: 0.68rem; color: var(--gf-orange-ink);
         background: #FFF2E5; border-radius: 0.2rem; padding: 0.12rem 0.4rem;
         margin: 0 0.25rem 0.25rem 0;
     }
-    .gf-watch {margin-top: 0.7rem; border-top: 1px solid var(--gf-line); padding-top: 0.55rem;}
-    .gf-watch-row {font-size: 0.79rem; line-height: 1.6; color: var(--gf-ink-2);}
-    .gf-ci-evidence {margin-top: 0.65rem;}
+    .gf-watch {margin-top: 1rem; border-left: 2px solid var(--gf-orange); padding: 0.4rem 0 0.4rem 1rem;}
+    .gf-watch-row {font-size: 0.85rem; line-height: 1.8; color: var(--gf-ink-2);}
+    .gf-ci-evidence {margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--gf-line);}
     .gf-monitor {
-        border-top: 1px solid var(--gf-line); padding: 0.7rem 0.1rem;
-        display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.3rem 1rem;
+        background: #FCFCFA; border: 1px solid var(--gf-line); border-radius: 0.7rem;
+        padding: 1.1rem 1.3rem; margin-bottom: 0.7rem; overflow-wrap: anywhere;
+        display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem 1.4rem;
     }
-    .gf-monitor-title {font-size: 0.88rem; font-weight: 650; color: var(--gf-ink);}
-    .gf-monitor-reason {font-size: 0.78rem; line-height: 1.55; color: var(--gf-ink-3);}
-    .gf-monitor-proof {font-size: 0.68rem; color: var(--gf-ink-3); white-space: nowrap;}
+    .gf-monitor-title {font-size: 0.98rem; font-weight: 650; color: #25384D; line-height: 1.6;}
+    .gf-monitor-reason {font-size: 0.84rem; line-height: 1.75; color: var(--gf-ink-2); margin-top: 0.5rem;}
+    .gf-monitor-proof {font-size: 0.72rem; color: #637184; white-space: nowrap; line-height: 1.7;}
+    .st-key-company-intelligence [role="tablist"] {
+        background: #EAE9E5; border-radius: 0.7rem; padding: 0.35rem; gap: 0.35rem;
+        border-bottom: 0; overflow-x: auto; scrollbar-width: thin;
+    }
+    .st-key-company-intelligence [role="tab"] {
+        height: auto; min-height: 44px; padding: 0.65rem 1.4rem;
+        border-radius: 0.5rem; color: #536071; white-space: nowrap; flex-shrink: 0;
+    }
+    .st-key-company-intelligence [role="tab"] p {font-size: 0.9rem; font-weight: 600;}
+    .st-key-company-intelligence [role="tab"][aria-selected="true"] {
+        background: #FFFFFF; color: #182B42; box-shadow: 0 2px 6px rgba(24, 43, 66, 0.08);
+    }
+    .st-key-company-intelligence [role="tab"]:hover {color: #B85C00;}
+    .st-key-company-intelligence [role="tab"]:focus-visible {outline: 2px solid #B85C00; outline-offset: -2px;}
+    .st-key-company-intelligence [data-baseweb="tab-highlight"],
+    .st-key-company-intelligence [data-baseweb="tab-border"],
+    .st-key-company-intelligence .react-aria-SelectionIndicator {display: none;}
     [data-baseweb="tab-list"] {overflow-x: auto; scrollbar-width: thin;}
     [data-baseweb="tab"] {white-space: nowrap;}
 
@@ -334,6 +376,14 @@ st.markdown(
         .gf-brief-grid {grid-template-columns: 1fr;}
         .gf-monitor {grid-template-columns: 1fr;}
         .gf-monitor-proof {white-space: normal;}
+        .gf-ci-head {margin-top: 2.3rem; padding: 1.4rem 1.2rem;}
+        .gf-ci-title {font-size: 1.4rem;}
+        .gf-ci-company-name {font-size: 1.55rem;}
+        .gf-ci-overview {grid-template-columns: 1fr; padding: 1rem 1.1rem;}
+        .gf-ci-overview-label span {display: inline; margin-left: 0.5rem;}
+        .gf-brief-card {padding: 1.2rem;}
+        .gf-brief-title {font-size: 1.15rem;}
+        .st-key-company-intelligence [role="tab"] {padding: 0.6rem 0.85rem;}
     }
 
     div.stButton > button {
@@ -712,7 +762,8 @@ def _brief_card_html(brief: Mapping[str, Any], now: datetime) -> str:
 
     situation = str(brief.get("situation_ko") or "").strip()
     situation_html = (
-        f'<div class="gf-brief-situation">{_esc(situation)}</div>' if situation else ""
+        '<div class="gf-brief-situation"><div class="gf-brief-label">상황 요약</div>'
+        f'{_esc(situation)}</div>' if situation else ""
     )
     return (
         '<div class="gf-brief-card"><div class="gf-brief-top">'
@@ -741,46 +792,64 @@ def _monitor_item_html(item: Mapping[str, Any]) -> str:
     )
 
 
+def _company_summary(company: Mapping[str, Any], fallback_reason: str = "") -> str:
+    """Describe existing brief counts only; unavailable data is not an empty result."""
+    if company.get("status") != "AVAILABLE":
+        own_reason = str(company.get("reason") or "").strip()
+        if own_reason and own_reason != fallback_reason:
+            return own_reason
+        if fallback_reason:
+            return "회사별 브리핑을 표시할 수 없습니다. 사유는 위 안내를 확인해 주세요."
+        return "회사별 브리핑 데이터가 없어 이번 주 상태를 요약할 수 없습니다."
+
+    briefs = company.get("briefs") or []
+    monitoring = company.get("monitoring_items") or []
+    if briefs:
+        summary = str(company.get("weekly_summary_ko") or "").strip()
+        return summary or (
+            f"이번 주 {len(briefs)}건의 Main Brief와 "
+            f"{len(monitoring)}건의 Monitoring 이슈가 확인되었습니다."
+        )
+    if monitoring:
+        return (
+            "이번 주 Main Brief 기준을 충족한 트렌드는 없으며, "
+            f"{len(monitoring)}건의 Monitoring 이슈를 계속 관찰할 필요가 있습니다."
+        )
+    return (
+        "이번 주 주요 트렌드 중 이 회사에 대해 "
+        "추가 브리핑이 필요한 수준의 이슈는 확인되지 않았습니다."
+    )
+
+
 def _render_company_tab(company: Mapping[str, Any], fallback_reason: str, now: datetime) -> None:
     st.markdown(
         '<div class="gf-ci-company">'
+        '<div class="gf-ci-eyebrow">COMPANY FOCUS</div>'
         f'<div class="gf-ci-company-name">{_esc(company.get("company_name"))}</div>'
         "</div>",
         unsafe_allow_html=True,
     )
 
-    if company.get("status") != "AVAILABLE":
-        # Never invent prose. A company-specific cause is worth an alert; a
-        # section-wide one is already shown above, so repeat only a short line.
-        own_reason = str(company.get("reason") or "").strip()
-        if own_reason and own_reason != fallback_reason:
-            st.markdown(
-                f'<div class="gf-ci-alert">{_esc(own_reason)}</div>',
-                unsafe_allow_html=True,
-            )
-        elif fallback_reason:
-            st.markdown(
-                '<div class="gf-ci-intro">표시할 Brief가 없습니다. '
-                '사유는 위 안내를 확인해 주세요.</div>',
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                '<div class="gf-ci-alert">표시할 Brief가 없습니다.</div>',
-                unsafe_allow_html=True,
-            )
+    available = company.get("status") == "AVAILABLE"
+    modifier = "" if available else " gf-ci-overview--unavailable"
+    st.markdown(
+        f'<div class="gf-ci-overview{modifier}">'
+        '<div class="gf-ci-overview-label">이번 주 상태 요약<span>WEEKLY OVERVIEW</span></div>'
+        f'<div class="gf-ci-summary">{_esc(_company_summary(company, fallback_reason))}</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    if not available:
         return
 
-    summary = str(company.get("weekly_summary_ko") or "").strip()
-    if summary:
-        st.markdown(
-            f'<div class="gf-ci-summary">{_esc(summary)}</div>', unsafe_allow_html=True
-        )
-
     briefs = list(company.get("briefs") or [])
+    monitoring = list(company.get("monitoring_items") or [])
+    st.markdown(
+        '<div class="gf-ci-subhead">Main Brief<span>핵심 브리핑</span></div>',
+        unsafe_allow_html=True,
+    )
     if briefs:
-        st.markdown('<div class="gf-ci-subhead">Main Brief</div>', unsafe_allow_html=True)
-        for index, brief in enumerate(briefs):
+        for brief in briefs:
             st.markdown(_brief_card_html(brief, now), unsafe_allow_html=True)
             extra = list(brief.get("evidence_articles") or [])[CI_EVIDENCE_PREVIEW:]
             if extra:
@@ -790,15 +859,21 @@ def _render_company_tab(company: Mapping[str, Any], fallback_reason: str, now: d
                         unsafe_allow_html=True,
                     )
     else:
+        next_step = (
+            "아래 Monitoring에서 관찰 사유와 근거 수준을 확인하세요."
+            if monitoring
+            else "현재 표시할 Monitoring 이슈도 없습니다. 다음 데이터 갱신 시 다시 확인할 수 있습니다."
+        )
         st.markdown(
-            '<div class="gf-ci-alert">표시할 Main Brief가 없습니다.</div>',
+            '<div class="gf-ci-empty"><strong>이번 주 별도 핵심 브리핑은 없습니다.</strong>'
+            f'<div>{next_step}</div></div>',
             unsafe_allow_html=True,
         )
 
-    monitoring = list(company.get("monitoring_items") or [])
     if monitoring:
         st.markdown(
-            '<div class="gf-ci-subhead">Monitoring</div>', unsafe_allow_html=True
+            '<div class="gf-ci-subhead">Monitoring<span>후속 관찰 이슈</span></div>',
+            unsafe_allow_html=True,
         )
         st.markdown(
             "".join(_monitor_item_html(item) for item in monitoring),
@@ -828,10 +903,11 @@ def _render_company_intelligence(payload: Mapping[str, Any], now: datetime) -> N
     if intelligence.get("status") != "GENERATED" and reason:
         st.markdown(f'<div class="gf-ci-alert">{_esc(reason)}</div>', unsafe_allow_html=True)
 
-    tabs = st.tabs([str(company.get("company_name") or "") for company in companies])
-    for tab, company in zip(tabs, companies):
-        with tab:
-            _render_company_tab(company, reason, now)
+    with st.container(key="company-intelligence"):
+        tabs = st.tabs([str(company.get("company_name") or "") for company in companies])
+        for tab, company in zip(tabs, companies):
+            with tab:
+                _render_company_tab(company, reason, now)
 
 
 def main() -> None:

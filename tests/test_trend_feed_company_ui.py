@@ -192,6 +192,65 @@ class CompanyIntelligenceUiTest(unittest.TestCase):
         for _, name in COMPANIES:
             self.assertIn(f"{name} 모니터링 항목", rendered)
 
+    def test_summary_fallback_and_empty_layout_follow_existing_items(self) -> None:
+        stamp = datetime.now(timezone.utc).isoformat()
+        briefs = _company_briefs(stamp)
+        life, investment, asset = briefs["companies"]
+        life["weekly_summary_ko"] = "  "
+        life["monitoring_items"] = []
+        asset["weekly_summary_ko"] = ""
+        asset["briefs"] = []
+
+        app, rendered = self._run_with(briefs, stamp)
+
+        self.assertEqual(len(app.exception), 0)
+        self.assertEqual(rendered.count('class="gf-ci-summary"'), 3)
+        self.assertIn("이번 주 1건의 Main Brief와 0건의 Monitoring 이슈가 확인되었습니다.", rendered)
+        self.assertIn("한화투자증권 주간 요약", rendered)
+        self.assertIn("1건의 Monitoring 이슈를 계속 관찰할 필요가 있습니다.", rendered)
+        self.assertIn("아래 Monitoring에서 관찰 사유와 근거 수준을 확인하세요.", rendered)
+        self.assertEqual(rendered.count('class="gf-brief-card"'), 2)
+
+        asset["monitoring_items"] = []
+        # A stale summary must not contradict a successfully generated empty result.
+        asset["weekly_summary_ko"] = "과거 요약"
+        app, rendered = self._run_with(briefs, stamp)
+
+        self.assertEqual(len(app.exception), 0)
+        self.assertEqual(rendered.count('class="gf-ci-summary"'), 3)
+        self.assertIn("추가 브리핑이 필요한 수준의 이슈는 확인되지 않았습니다.", rendered)
+        self.assertIn("현재 표시할 Monitoring 이슈도 없습니다.", rendered)
+        self.assertNotIn("과거 요약", rendered)
+
+    def test_summary_fallback_counts_multiple_items_without_generating_prose(self) -> None:
+        stamp = datetime.now(timezone.utc).isoformat()
+        briefs = _company_briefs(stamp)
+        life = briefs["companies"][0]
+        life["weekly_summary_ko"] = ""
+        life["briefs"] *= 2
+        life["monitoring_items"] *= 3
+
+        app, rendered = self._run_with(briefs, stamp)
+
+        self.assertEqual(len(app.exception), 0)
+        self.assertIn("이번 주 2건의 Main Brief와 3건의 Monitoring 이슈가 확인되었습니다.", rendered)
+
+    def test_company_prose_is_escaped_in_summary_and_cards(self) -> None:
+        stamp = datetime.now(timezone.utc).isoformat()
+        briefs = _company_briefs(stamp)
+        life = briefs["companies"][0]
+        life["weekly_summary_ko"] = "<script>alert('summary')</script>"
+        life["briefs"][0]["title_ko"] = "<b>brief</b>"
+        life["monitoring_items"][0]["reason_ko"] = "<img src=x onerror=alert(1)>"
+
+        app, rendered = self._run_with(briefs, stamp)
+
+        self.assertEqual(len(app.exception), 0)
+        self.assertIn("&lt;script&gt;", rendered)
+        self.assertIn("&lt;b&gt;brief&lt;/b&gt;", rendered)
+        self.assertIn("&lt;img src=x onerror=alert(1)&gt;", rendered)
+        self.assertNotIn("<script>", rendered)
+
     def test_failed_generation_states_the_cause_once(self) -> None:
         stamp = datetime.now(timezone.utc).isoformat()
         briefs = _company_briefs(
@@ -209,6 +268,8 @@ class CompanyIntelligenceUiTest(unittest.TestCase):
         # Stated once at section level rather than repeated in all three tabs.
         self.assertEqual(rendered.count("관련성 분류 상태가 CLASSIFIED가 아닙니다."), 1)
         self.assertEqual(rendered.count("사유는 위 안내를 확인해 주세요."), 3)
+        self.assertEqual(rendered.count('class="gf-ci-summary"'), 3)
+        self.assertNotIn("추가 브리핑이 필요한 수준의 이슈는 확인되지 않았습니다.", rendered)
         self.assertEqual(rendered.count("gf-brief-card"), 0)
 
     def test_timestamp_mismatch_is_reported_and_blocks_briefs(self) -> None:
