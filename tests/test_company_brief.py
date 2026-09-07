@@ -115,7 +115,7 @@ def _partial_relevance(
     settings: dict[tuple[str, str], tuple[str, str]] | None = None,
 ) -> dict:
     """A relevance payload as if classify_company_relevance() left out some
-    companies (e.g. one failed Groq validation twice)."""
+    companies (e.g. one failed OpenAI validation twice)."""
     full = _relevance(profiles, settings)
     full["status"] = "PARTIAL"
     full["evaluations"] = [
@@ -341,7 +341,7 @@ class CandidateSelectionTest(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(len(first[self.company_id]["monitoring"]), 2)
 
-    def test_no_main_candidate_does_not_force_a_brief_or_call_groq(self) -> None:
+    def test_no_main_candidate_does_not_force_a_brief_or_call_openai(self) -> None:
         settings = {
             ("trend_01", self.company_id): ("medium", "limited"),
         }
@@ -578,9 +578,9 @@ class GenerationCallTest(unittest.TestCase):
         self.assertEqual(result["status"], "GENERATED")
         self.assertEqual(len(completions.calls), 2)
         self.assertIn("이전 응답", completions.calls[1]["messages"][-1]["content"])
-        self.assertEqual(completions.calls[0]["max_tokens"], 4000)
+        self.assertEqual(completions.calls[0]["max_completion_tokens"], 4000)
 
-    def test_two_failures_return_ungenerated_without_raw_response(self) -> None:
+    def test_two_failures_preserve_company_states_without_raw_response(self) -> None:
         client, completions = _client_with_payloads(
             {"companies": []}, {"companies": []}
         )
@@ -594,9 +594,13 @@ class GenerationCallTest(unittest.TestCase):
             now=NOW,
         )
         self.assertEqual(len(completions.calls), 2)
-        self.assertEqual(result["status"], "UNGENERATED")
-        self.assertEqual(result["companies"], [])
-        self.assertNotIn("companies", result["error"]["message"])
+        self.assertEqual(result["status"], "PARTIAL")
+        self.assertEqual(len(result["companies"]), 3)
+        failed = next(c for c in result["companies"] if c["company_id"] == self.company_id)
+        self.assertEqual(failed["generation_status"], "PARTIAL")
+        self.assertEqual(failed["briefs"], [])
+        self.assertEqual(failed["failed_briefs"], ["trend_01"])
+        self.assertNotIn("raw_response", result)
 
     def test_api_failure_is_retried_once(self) -> None:
         body = json.dumps(self.good_payload, ensure_ascii=False)

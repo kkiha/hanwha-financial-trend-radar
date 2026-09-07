@@ -121,7 +121,7 @@ def build_company_intelligence(
         return {"status": "UNAVAILABLE", "reason": reason, "companies": unavailable}
 
     status = str(briefs_payload.get("status") or "UNKNOWN")
-    if status != "GENERATED":
+    if status not in {"GENERATED", "PARTIAL"}:
         error = briefs_payload.get("error")
         detail = str(error.get("message") or "").strip() if isinstance(error, Mapping) else ""
         reason = "회사별 Brief가 생성되지 않았습니다."
@@ -182,6 +182,9 @@ def build_company_intelligence(
                 "company_id": company_id,
                 "company_name": str(raw.get("company_name") or company_name),
                 "status": "AVAILABLE",
+                "generation_status": raw.get("generation_status", "GENERATED"),
+                "generation_note": raw.get("generation_note", ""),
+                "failed_briefs": raw.get("failed_briefs", []),
                 "weekly_summary_ko": str(raw.get("weekly_summary_ko") or ""),
                 "briefs": [
                     _attach_evidence(item, articles_by_id)
@@ -196,8 +199,8 @@ def build_company_intelligence(
             }
         )
     return {
-        "status": "GENERATED",
-        "reason": "",
+        "status": status,
+        "reason": "일부 Main Brief 생성이 미완료입니다. 성공한 항목과 Monitoring을 표시합니다." if status == "PARTIAL" else "",
         "generated_at": briefs_payload.get("generated_at"),
         "source_trends_generated_at": briefs_payload.get("source_trends_generated_at"),
         "companies": companies,
@@ -442,6 +445,7 @@ def load_trend_feed(
                 article_registry or payload["articles"],
                 trends_generated_at=payload.get("generated_at"),
             )
+            attach_previous_briefs(payload["company_intelligence"], Path(company_briefs_path).parent)
             return payload
 
     fallback = _read_json(Path(fallback_path)) or {}
@@ -538,7 +542,54 @@ def save_company_relevance(
 
 
 def save_company_briefs(
-    payload: Mapping[str, Any], *, live_dir: Path = LIVE_DIR
+    payload: Mapping[str, Any], *, live_dir: Path = LIVE_DIR,
+    articles: Sequence[Mapping[str, Any]] = (),
 ) -> Path:
     """Atomically persist company briefs without risking a truncated JSON file."""
+    # Save an evidence-complete successful snapshot before replacing current state.
+    cache_company_briefs(payload, articles, live_dir=Path(live_dir))
     return _save_json_atomically(payload, Path(live_dir) / LIVE_COMPANY_BRIEFS_PATH.name)
+
+
+def cache_company_briefs(payload, articles, *, live_dir: Path) -> None:
+    if not payload or payload.get("status") not in {"GENERATED", "PARTIAL"}:
+        return
+    path = live_dir / "latest_company_briefs_success.json"
+    cache = _read_json(path) or {"companies": {}}
+    registry = {a["article_id"]: a for a in articles if a.get("article_id")}
+    for raw in payload.get("companies", []):
+        if not raw.get("company_id"):
+            continue
+        # Keep a previous full result when the new attempt produced only Monitoring.
+        if raw.get("generation_status") == "PARTIAL" and not raw.get("briefs"):
+            continue
+        company = dict(raw)
+        for field in ("briefs", "monitoring_items"):
+            company[field] = [_attach_evidence(item, registry) for item in raw.get(field, [])]
+        snapshot = {"generated_at": payload.get("generated_at"),
+                    "source_trends_generated_at": payload.get("source_trends_generated_at"),
+                    "company": company}
+        history = cache["companies"].get(raw["company_id"], [])
+        if history and history[0].get("generated_at") == snapshot["generated_at"]:
+            continue
+        cache["companies"][raw["company_id"]] = [snapshot, *history][:5]
+    _save_json_atomically(cache, path)
+
+
+def preserve_previous_briefs(live_dir: Path) -> None:
+    """Migrate an existing successful result before new collection replaces articles."""
+    previous = _read_json(live_dir / LIVE_COMPANY_BRIEFS_PATH.name)
+    trends = _read_json(live_dir / LIVE_TRENDS_PATH.name) or {}
+    if previous and previous.get("source_trends_generated_at") == trends.get("generated_at"):
+        cache_company_briefs(previous, _as_articles(trends.get("articles")), live_dir=live_dir)
+
+
+def attach_previous_briefs(intelligence, live_dir: Path) -> None:
+    cache = _read_json(live_dir / "latest_company_briefs_success.json") or {}
+    for company in intelligence.get("companies", []):
+        if company.get("status") == "AVAILABLE" and company.get("generation_status") != "PARTIAL":
+            continue
+        history = cache.get("companies", {}).get(company["company_id"], [])
+        snapshot = next((item for item in history if item.get("generated_at") != intelligence.get("generated_at")), None)
+        if snapshot:
+            company["previous_success"] = snapshot

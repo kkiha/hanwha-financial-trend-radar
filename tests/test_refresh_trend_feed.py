@@ -16,7 +16,7 @@ from rag_finance.ingestion.rss_collector import (
 from scripts import refresh_trend_feed
 from scripts.refresh_trend_feed import (
     AI_VALIDATION_MESSAGE,
-    MISSING_GROQ_PACKAGE_MESSAGE,
+    MISSING_OPENAI_PACKAGE_MESSAGE,
     NO_API_KEY_MESSAGE,
     SKIPPED_LLM_MESSAGE,
     _load_llm_settings,
@@ -139,7 +139,7 @@ class RefreshFailureTest(unittest.TestCase):
             with_articles_by_language={"en": 3, "ko": 2},
         )
         with tempfile.TemporaryDirectory() as tmp:
-            with _patch_collect(articles, debug), mock.patch.dict(os.environ, {"GROQ_API_KEY": ""}, clear=False):
+            with _patch_collect(articles, debug), mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""}, clear=False):
                 report = refresh(live_dir=Path(tmp))
             saved = json.loads((Path(tmp) / "latest_articles.json").read_text(encoding="utf-8"))
 
@@ -148,11 +148,11 @@ class RefreshFailureTest(unittest.TestCase):
         self.assertFalse(report["clustered"])
 
 
-class RefreshGroqGateTest(unittest.TestCase):
+class RefreshOpenAIGateTest(unittest.TestCase):
     def test_no_api_key_saves_articles_but_writes_no_trends(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             with _patch_collect(_articles(), _debug()), mock.patch.dict(
-                os.environ, {"GROQ_API_KEY": ""}, clear=False
+                os.environ, {"OPENAI_API_KEY": ""}, clear=False
             ):
                 report = refresh(live_dir=Path(tmp))
             names = {path.name for path in Path(tmp).iterdir()}
@@ -164,19 +164,19 @@ class RefreshGroqGateTest(unittest.TestCase):
         self.assertNotIn("latest_trends.json", names)
         self.assertIn("latest_refresh.json", names)
 
-    def test_missing_groq_package_is_reported_as_an_install_step(self) -> None:
+    def test_missing_openai_package_is_reported_as_an_install_step(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             with _patch_collect(_articles(), _debug()), mock.patch.dict(
-                os.environ, {"GROQ_API_KEY": "test-key"}, clear=False
+                os.environ, {"OPENAI_API_KEY": "test-key"}, clear=False
             ), mock.patch.object(
                 refresh_trend_feed,
                 "cluster_trends",
-                side_effect=RuntimeError("Install the groq package for trend clustering"),
+                side_effect=RuntimeError("Install the openai package for trend clustering"),
             ):
                 report = refresh(live_dir=Path(tmp))
             names = {path.name for path in Path(tmp).iterdir()}
 
-        self.assertEqual(report["error"], MISSING_GROQ_PACKAGE_MESSAGE)
+        self.assertEqual(report["error"], MISSING_OPENAI_PACKAGE_MESSAGE)
         self.assertNotIn("latest_trends.json", names)
 
     def test_skip_llm_collects_only(self) -> None:
@@ -196,7 +196,7 @@ class RefreshGroqGateTest(unittest.TestCase):
     def test_cluster_failure_keeps_the_previous_trends(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             with _patch_collect(_articles(), _debug()), mock.patch.dict(
-                os.environ, {"GROQ_API_KEY": "test-key"}, clear=False
+                os.environ, {"OPENAI_API_KEY": "test-key"}, clear=False
             ), mock.patch.object(
                 refresh_trend_feed,
                 "cluster_trends",
@@ -245,7 +245,7 @@ class RefreshSuccessTest(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as tmp:
             with _patch_collect(articles, _debug()), mock.patch.dict(
-                os.environ, {"GROQ_API_KEY": "test-key"}, clear=False
+                os.environ, {"OPENAI_API_KEY": "test-key"}, clear=False
             ), mock.patch.object(
                 refresh_trend_feed, "cluster_trends", return_value=clustered
             ):
@@ -284,7 +284,7 @@ class RefreshSuccessTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             with _patch_collect(articles, _debug()), mock.patch.dict(
-                os.environ, {"GROQ_API_KEY": "test-key"}, clear=False
+                os.environ, {"OPENAI_API_KEY": "test-key"}, clear=False
             ), mock.patch.object(refresh_trend_feed, "cluster_trends", fake_cluster):
                 refresh(live_dir=Path(tmp), skip_relevance=True)
 
@@ -326,7 +326,7 @@ class RefreshSuccessTest(unittest.TestCase):
             config_path = Path(tmp) / "config.json"
             config_path.write_text(json.dumps(config), encoding="utf-8")
             with _patch_collect(articles, _debug()), mock.patch.dict(
-                os.environ, {"GROQ_API_KEY": "test-key"}, clear=False
+                os.environ, {"OPENAI_API_KEY": "test-key"}, clear=False
             ), mock.patch.object(refresh_trend_feed, "cluster_trends", fake_cluster):
                 refresh(
                     live_dir=Path(tmp),
@@ -364,7 +364,7 @@ class RefreshRelevanceTest(unittest.TestCase):
     def _run(self, relevance: dict, *, skip_relevance: bool = False):
         stack = [
             _patch_collect(self.articles, _debug()),
-            mock.patch.dict(os.environ, {"GROQ_API_KEY": "test-key"}, clear=False),
+            mock.patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}, clear=False),
             mock.patch.object(
                 refresh_trend_feed, "cluster_trends", return_value=self.clustered
             ),
@@ -412,7 +412,7 @@ class RefreshRelevanceTest(unittest.TestCase):
         self.assertEqual(files["latest_refresh.json"]["relevance_evaluations"], 9)
         self.assertEqual(classify.call_args.kwargs["max_attempts"], 2)
         self.assertEqual(classify.call_args.kwargs["max_tokens"], 1200)
-        self.assertEqual(classify.call_args.kwargs["reasoning_effort"], "low")
+        self.assertEqual(classify.call_args.kwargs["reasoning_effort"], "none")
         self.assertEqual(
             files["latest_refresh.json"]["relevance_calls"],
             relevance["relevance_calls"],
@@ -477,7 +477,7 @@ class RefreshBriefTest(unittest.TestCase):
     def _run(self, briefs: dict, *, skip_briefs: bool = False):
         patches = [
             _patch_collect(self.articles, _debug()),
-            mock.patch.dict(os.environ, {"GROQ_API_KEY": "test-key"}, clear=False),
+            mock.patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}, clear=False),
             mock.patch.object(
                 refresh_trend_feed, "cluster_trends", return_value=self.clustered
             ),
@@ -580,10 +580,10 @@ class LlmConfigTest(unittest.TestCase):
 
         self.assertGreater(settings["max_tokens"], 0)
         self.assertEqual(settings["relevance_max_tokens_per_company"], 1200)
-        self.assertEqual(settings["relevance_reasoning_effort"], "low")
+        self.assertEqual(settings["relevance_reasoning_effort"], "none")
         self.assertEqual(settings["brief_max_tokens"], 4000)
         self.assertGreater(settings["max_articles"], 0)
-        self.assertIn(settings["reasoning_effort"], {"low", "medium", "high", None})
+        self.assertIn(settings["reasoning_effort"], {"none", "low", "medium", "high", None})
         self.assertGreaterEqual(settings["max_attempts"], 1)
 
     def test_brief_token_limit_is_loaded_independently(self) -> None:

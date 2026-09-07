@@ -10,10 +10,18 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 import json
-import os
 import re
 import time
 from typing import Any, Mapping, Sequence
+
+from rag_finance.llm.grounding import (
+    uses_indirect_language as _uses_indirect_language, CONDITIONAL_GUIDANCE,
+)
+
+from rag_finance.llm.openai_runtime import (
+    create_client, resolve_api_key, completion_options, api_error_message,
+    is_permanent_api_error, DEFAULT_MODEL, DEFAULT_REASONING_EFFORT,
+)
 
 from rag_finance.ingestion.rss_collector import parse_datetime
 from rag_finance.llm.trend_clusterer import parse_structured_json
@@ -25,10 +33,8 @@ from rag_finance.profiles.company_profiles import (
 
 RELEVANCE_LEVELS = ("high", "medium", "low", "none")
 BRIEF_CANDIDATE_LEVELS = ("high", "medium")
-DEFAULT_MODEL = "openai/gpt-oss-120b"
 DEFAULT_TEMPERATURE = 0.1
 DEFAULT_MAX_TOKENS_PER_COMPANY = 1200
-DEFAULT_REASONING_EFFORT = "low"
 DEFAULT_MAX_ATTEMPTS = 2
 DEFAULT_RETRY_BASE_DELAY = 1.0
 MAX_RETRY_WAIT_SECONDS = 30.0
@@ -46,21 +52,7 @@ EVALUATION_FIELDS = {
     "business_tags",
     "evidence_article_ids",
 }
-INDIRECT_LANGUAGE_MARKERS = (
-    "가능성",
-    "수 있다",
-    "수 있음",
-    "검토",
-    "기회",
-    "위험",
-    "요인",
-    "관찰",
-    "점검",
-    "영향을 받을",
-    "연결될",
-    "전이될",
-    "간접",
-)
+
 
 
 def _as_list(value: Any, *, field: str) -> list[Any]:
@@ -133,9 +125,6 @@ def _mentions_company(company_name: Any, articles: Sequence[Mapping[str, Any]]) 
     )
 
 
-def _uses_indirect_language(value: str) -> bool:
-    normalized = _normalized_text(value).casefold()
-    return any(marker in normalized for marker in INDIRECT_LANGUAGE_MARKERS)
 
 
 def _article_priority(article: Mapping[str, Any]) -> tuple[float, int, str]:
@@ -150,7 +139,7 @@ def select_representative_articles(
     *,
     limit: int = MAX_ARTICLES_PER_TREND,
 ) -> list[dict[str, Any]]:
-    """Select a stable, source-diverse set before sending anything to Groq."""
+    """Select a stable, source-diverse set before sending anything to OpenAI."""
     if limit < 1:
         raise ValueError("Representative article limit must be positive")
     ordered = sorted((dict(article) for article in articles), key=_article_priority)
@@ -280,7 +269,7 @@ reason_ko와 transmission_path_ko는 근거에 기반해 간결한 한글로 작
 입력에 없는 사건·수치·인과관계를 만들지 말고 투자추천이나 단정적 전략지시를 쓰지 마라.
 기사 수·출처 수는 출력하지 말고 ID와 태그는 입력에 실제 존재하는 값만 사용하라."""
     return [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": system_prompt + "\n" + CONDITIONAL_GUIDANCE},
         {
             "role": "user",
             "content": json.dumps(
@@ -691,26 +680,25 @@ def classify_company_relevance(
         )
 
     if client is None:
-        key = api_key or os.environ.get("GROQ_API_KEY", "")
+        key = resolve_api_key(api_key)
         if not key:
             return _unclassified(
                 trends_payload,
                 model=model,
                 now=reference,
                 error_type="MissingApiKey",
-                message="GROQ_API_KEY가 없어 관련성 분류를 실행하지 못했습니다.",
+                message="OPENAI_API_KEY가 없어 관련성 분류를 실행하지 못했습니다.",
             )
         try:
-            from groq import Groq
+            client = create_client(key)
         except ImportError:
             return _unclassified(
                 trends_payload,
                 model=model,
                 now=reference,
                 error_type="MissingDependency",
-                message="groq 패키지가 없어 관련성 분류를 실행하지 못했습니다.",
+                message="openai 패키지가 없어 관련성 분류를 실행하지 못했습니다.",
             )
-        client = Groq(api_key=key)
 
     article_count = sum(len(trend["article_ids"]) for trend in representative_trends)
     relevance_calls: dict[str, dict[str, Any]] = {}
@@ -756,10 +744,9 @@ def classify_company_relevance(
         }
         relevance_calls[company_id] = call_debug
         request: dict[str, Any] = {
-            "model": model,
+            **completion_options(model=model, max_tokens=max_tokens,
+                                 reasoning_effort=reasoning_effort, temperature=temperature),
             "messages": base_messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
             "response_format": response_format,
         }
         if reasoning_effort:
@@ -789,7 +776,7 @@ def classify_company_relevance(
                 finish_reason = _attribute(choice, "finish_reason", "") or ""
                 message = _attribute(choice, "message")
                 content = _attribute(message, "content", "") or ""
-                if not str(content).strip():
+                if finish_reason == "length" or not str(content).strip():
                     raise ValueError("Model returned no content")
                 parsed = parse_structured_json(str(content))
                 validate_relevance_payload(
@@ -809,7 +796,7 @@ def classify_company_relevance(
                     call_debug["error_code"] = error_code
                 is_validation = isinstance(exc, (TypeError, ValueError))
                 detail = validation_reason(exc, finish_reason=finish_reason) if is_validation else (
-                    f"API 요청 실패 (HTTP {status})." if status else "API 연결 또는 요청 처리에 실패했습니다."
+                    api_error_message(exc)
                 )
                 call_debug["error_message"] = detail
                 call_debug.setdefault("attempt_details", []).append({
@@ -818,9 +805,11 @@ def classify_company_relevance(
                     "finish_reason": finish_reason if finish_reason in {"stop", "length", "content_filter"} else "",
                     "http_status": status,
                 })
-                correction = str(exc) if is_validation else "Groq API request failed"
-                if status == 413 or attempt >= max_attempts:
+                correction = str(exc) if is_validation else "OpenAI API request failed"
+                if is_permanent_api_error(exc) or attempt >= max_attempts:
                     break
+                if finish_reason == "length":
+                    request["max_completion_tokens"] = max(max_tokens, min(max_tokens * 2, 16000))
                 wait_seconds = retry_base_delay * (2 ** (attempt - 1))
                 if status == 429:
                     retry_after = _retry_after_seconds(exc, now=reference)
@@ -853,7 +842,7 @@ def classify_company_relevance(
     )
     successful_companies = sorted(set(loaded_profiles) - set(failed_companies))
 
-    # A company failing must not discard evaluations Groq already produced (and
+    # A company failing must not discard evaluations OpenAI already produced (and
     # validated) for its siblings: re-scope the merge to whichever companies
     # actually succeeded instead of throwing everything away.
     if not successful_companies:
@@ -864,7 +853,7 @@ def classify_company_relevance(
             now=reference,
             error_type=type(last_error).__name__ if last_error else "UnknownError",
             message=(
-                f"회사별 Groq 관련성 분류 중 {len(failed_companies)}개 회사 요청이 "
+                f"회사별 OpenAI 관련성 분류 중 {len(failed_companies)}개 회사 요청이 "
                 "실패했습니다."
             ),
             relevance_calls=relevance_calls,

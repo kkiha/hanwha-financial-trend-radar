@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT))
 
 RUNNER = '''
 import sys, time
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 import streamlit as st
@@ -36,6 +37,15 @@ companies=payload["company_intelligence"]["companies"]
 companies[1]["briefs"]=[]
 companies[2]["briefs"]=[]
 companies[2]["monitoring_items"]=[]
+if mode=="event-labels":
+    articles=payload["trends"][0]["articles"]
+    for article, title in zip(articles, ["한화투자증권 중개형 ISA 투자 시작 이벤트 실시", "한화투자증권 중개형 ISA 이벤트 신규 고객 혜택"]):
+        article.update(title=title,published_at="2026-09-07T09:00:00Z")
+    companies[0]["briefs"][0]["evidence_articles"]=deepcopy(articles[:2])
+if mode=="partial-brief":
+    old=deepcopy(companies[0])
+    companies[0].update(briefs=[],generation_status="PARTIAL",failed_briefs=["trend_01"],
+                        previous_success={"generated_at":"2026-09-01T12:00:00Z","company":old})
 if mode=="unavailable":
     companies[2].update(status="UNAVAILABLE",reason="검증용 회사 분석 실패")
 if mode=="demo":
@@ -211,10 +221,26 @@ def main() -> None:
                     print("PASS: three page layouts at desktop/mobile widths; unknown route fallback")
 
 
-                    for mode in ("unavailable", "demo", "empty", "no-companies", "hostile"):
+                    for mode in ("event-labels", "partial-brief", "unavailable", "demo", "empty", "no-companies", "hostile"):
                         page.goto(url + "?mode=" + mode)
                         expect(page.locator(".hero")).to_be_visible()
-                        if mode == "unavailable":
+                        if mode == "event-labels":
+                            page.locator("[data-evidence]").first.click()
+                            expect(page.locator("#evidence-dialog .tag").filter(has_text="동일 사건 보도 추정")).to_have_count(2)
+                            page.keyboard.press("Escape")
+                            page.locator("#company-grid a").first.click()
+                            expect(page.locator(".brief-card .tag").filter(has_text="동일 사건 보도 추정")).to_have_count(2)
+                            page.screenshot(path=str(output / "event-labels.png"))
+                        elif mode == "partial-brief":
+                            page.locator("#company-grid a").first.click()
+                            expect(page.locator(".detail-summary")).to_contain_text("생성 미완료")
+                            expect(page.locator("#detail-body > .monitoring-grid article.monitor")).to_have_count(1)
+                            expect(page.locator(".previous-result")).to_contain_text("이전 결과")
+                            page.locator(".previous-result > summary").click()
+                            expect(page.locator(".previous-result .brief-card")).to_be_visible()
+                            expect(page.locator(".previous-result .ev").first).to_be_visible()
+                            expect(page.locator("#group-report")).to_be_hidden()
+                        elif mode == "unavailable":
                             page.locator("#company-grid a").nth(2).click()
                             expect(page.locator("#detail-body")).to_contain_text("검증용 회사 분석 실패")
                             page.locator("#company-detail .page-nav > a").click()

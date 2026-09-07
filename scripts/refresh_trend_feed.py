@@ -3,7 +3,7 @@
     python -m scripts.refresh_trend_feed
     python -m scripts.refresh_trend_feed --skip-llm    # collection only
 
-Without GROQ_API_KEY the collection still runs and is saved; the existing cached
+Without OPENAI_API_KEY the collection still runs and is saved; the existing cached
 trends are left untouched, so a demo never turns synthetic data into "live".
 """
 
@@ -12,9 +12,10 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
-import os
 from pathlib import Path
 from typing import Any, Mapping
+
+from rag_finance.llm.openai_runtime import resolve_api_key
 
 from app.trend_feed_data import (
     LIVE_DIR,
@@ -23,6 +24,7 @@ from app.trend_feed_data import (
     save_company_relevance,
     save_live_payload,
     save_refresh_status,
+    preserve_previous_briefs,
 )
 from rag_finance.ingestion.rss_collector import (
     SOURCE_MODES,
@@ -73,11 +75,11 @@ MESSAGES = {
     ),
 }
 NO_API_KEY_MESSAGE = (
-    "기사 수집은 완료됐지만 GROQ_API_KEY가 없어 AI 분석을 실행하지 못했습니다."
+    "기사 수집은 완료됐지만 OPENAI_API_KEY가 없어 AI 분석을 실행하지 못했습니다."
 )
-MISSING_GROQ_PACKAGE_MESSAGE = (
-    "기사 수집은 완료됐지만 groq 패키지가 없어 AI 분석을 실행하지 못했습니다.\n"
-    "pip install groq 를 실행해 주세요."
+MISSING_OPENAI_PACKAGE_MESSAGE = (
+    "기사 수집은 완료됐지만 openai 패키지가 없어 AI 분석을 실행하지 못했습니다.\n"
+    "pip install openai 를 실행해 주세요."
 )
 SKIPPED_LLM_MESSAGE = "기사 수집만 실행했습니다. 기존 트렌드 결과를 유지합니다."
 RELEVANCE_FAILURE_MESSAGE = (
@@ -151,10 +153,10 @@ def _load_llm_settings(config_path: str | Path = DEFAULT_CONFIG_PATH) -> dict[st
         if isinstance(value, int) and not isinstance(value, bool) and value > 0:
             settings[field] = value
     reasoning = llm.get("reasoning_effort")
-    if reasoning in {"low", "medium", "high", None}:
+    if reasoning in {"none", "low", "medium", "high", None}:
         settings["reasoning_effort"] = reasoning
     relevance_reasoning = llm.get("relevance_reasoning_effort")
-    if relevance_reasoning in {"low", "medium", "high", None}:
+    if relevance_reasoning in {"none", "low", "medium", "high", None}:
         settings["relevance_reasoning_effort"] = relevance_reasoning
     delay = llm.get("retry_base_delay_seconds")
     if isinstance(delay, (int, float)) and not isinstance(delay, bool) and delay >= 0:
@@ -201,6 +203,7 @@ def _finish_refresh(
         "relevance_evaluations": report.get("relevance_evaluations", 0),
         "relevance_calls": report.get("relevance_calls", {}),
         "brief_status": report.get("brief_status"),
+        "brief_calls": report.get("brief_calls", {}),
         "main_briefs": report.get("main_briefs", 0),
         "monitoring_items": report.get("monitoring_items", 0),
         "model": report.get("model"),
@@ -263,6 +266,7 @@ def refresh(
 ) -> dict:
     """Returns a report. Never raises for expected failures (network, key, feeds)."""
     load_env_file()
+    preserve_previous_briefs(Path(live_dir))
     attempted_at = datetime.now(timezone.utc).isoformat()
     rss = _load_rss_settings(config_path)
     if source_mode is not None:
@@ -311,7 +315,7 @@ def refresh(
         report.update(outcome="partial", stage="collection", error_code="llm_skipped")
         return _finish_refresh(report, live_dir=Path(live_dir), attempted_at=attempted_at)
 
-    if not os.environ.get("GROQ_API_KEY", "").strip():
+    if not resolve_api_key():
         report["error"] = NO_API_KEY_MESSAGE
         report.update(outcome="partial", stage="llm", error_code="missing_api_key")
         return _finish_refresh(report, live_dir=Path(live_dir), attempted_at=attempted_at)
@@ -336,9 +340,9 @@ def refresh(
     except RuntimeError as exc:
         message = str(exc)
         report["error"] = (
-            MISSING_GROQ_PACKAGE_MESSAGE if "groq package" in message else message
+            MISSING_OPENAI_PACKAGE_MESSAGE if "openai package" in message else message
         )
-        report.update(stage="llm", error_code="missing_groq_package")
+        report.update(stage="llm", error_code="missing_openai_package")
         return _finish_refresh(report, live_dir=Path(live_dir), attempted_at=attempted_at)
     except Exception as exc:  # noqa: BLE001 - keep the previous trends on any failure
         diagnostics = getattr(exc, "diagnostics", {})
@@ -348,8 +352,9 @@ def refresh(
         report.update(
             stage="llm",
             error_code="llm_invalid_response" if validation_failure else "llm_request_failed",
-            error=AI_VALIDATION_MESSAGE if validation_failure else AI_REQUEST_MESSAGE,
-            technical_error=f"{type(exc).__name__}: {exc}",
+            error=AI_VALIDATION_MESSAGE if validation_failure else (
+                attempts[-1].get("message", AI_REQUEST_MESSAGE) if attempts else AI_REQUEST_MESSAGE),
+            technical_error=type(exc).__name__,
             llm_diagnostics=diagnostics,
         )
         return _finish_refresh(report, live_dir=Path(live_dir), attempted_at=attempted_at)
@@ -422,7 +427,7 @@ def refresh(
         max_attempts=min(llm["max_attempts"], 2),
         retry_base_delay=llm["retry_base_delay_seconds"],
     )
-    briefs_path = save_company_briefs(briefs, live_dir=Path(live_dir))
+    briefs_path = save_company_briefs(briefs, live_dir=Path(live_dir), articles=articles)
     brief_status = str(briefs.get("status") or "UNGENERATED")
     company_results = briefs.get("companies") or []
     main_brief_count = sum(len(company.get("briefs") or []) for company in company_results)
@@ -431,17 +436,18 @@ def refresh(
     )
     report.update(
         brief_status=brief_status,
+        brief_calls=briefs.get("brief_calls", {}),
         briefs_generated=brief_status == "GENERATED",
         main_briefs=main_brief_count,
         monitoring_items=monitoring_count,
         briefs_path=str(briefs_path),
     )
-    if brief_status != "GENERATED" and relevance_status == "CLASSIFIED":
+    if brief_status != "GENERATED":
         report.update(
             outcome="partial",
             stage="briefs",
-            error_code="briefs_not_generated",
-            error=BRIEF_FAILURE_MESSAGE,
+            error_code="briefs_partial" if brief_status == "PARTIAL" else "briefs_not_generated",
+            error="일부 Main Brief를 생성하지 못했습니다. 성공한 Brief와 Monitoring은 저장했습니다. 이전 성공 자료가 있으면 별도로 표시합니다." if brief_status == "PARTIAL" else BRIEF_FAILURE_MESSAGE,
         )
     return _finish_refresh(report, live_dir=Path(live_dir), attempted_at=attempted_at)
 

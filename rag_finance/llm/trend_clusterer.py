@@ -1,4 +1,4 @@
-"""Group recent articles into three emerging trends with Groq.
+"""Group recent articles into three emerging trends with OpenAI.
 
 The model only groups and writes prose. Every count shown on screen is computed
 from the linked articles in code (see app/trend_feed_data.py), never generated.
@@ -9,25 +9,26 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import datetime, timezone
 import json
-import os
 import time
 from typing import Any, Mapping, Sequence
+
+from rag_finance.llm.openai_runtime import (
+    create_client, resolve_api_key, completion_options, api_error_message,
+    is_permanent_api_error, DEFAULT_MODEL, DEFAULT_REASONING_EFFORT,
+)
 
 from rag_finance.ingestion.rss_collector import WATCH_AREAS
 
 
 TREND_COUNT = 3
-# Sized for Groq's free tier, which caps tokens-per-minute for the whole request
-# (prompt + max_tokens). 36 trimmed articles leave room for the model's output.
+# Keep selection bounded and comparable across runs; counts use all RSS articles.
 MAX_ARTICLES_FOR_LLM = 36
 # The full RSS summary is kept in the payload; only the prompt copy is trimmed.
 LLM_SUMMARY_MAX_CHARS = 140
 MAX_TAGS_PER_TREND = 3
 MAX_WATCH_NEXT = 3
-DEFAULT_MODEL = "openai/gpt-oss-120b"
 DEFAULT_TEMPERATURE = 0.1
 DEFAULT_MAX_TOKENS = 2600
-DEFAULT_REASONING_EFFORT = "low"
 DEFAULT_MAX_ATTEMPTS = 2
 DEFAULT_RETRY_BASE_DELAY = 1.0
 
@@ -128,7 +129,6 @@ related_business_tags는 다음 목록에서만 최대 {MAX_TAGS_PER_TREND}개 �
         "related_business_tags": list(ALLOWED_BUSINESS_TAGS[:2]),
     }
     contract = {
-        "generated_at": "ISO datetime",
         "window_days": window_days,
         "trends": [
             {**trend_example, "trend_id": f"trend_{index:02d}"}
@@ -150,7 +150,7 @@ related_business_tags는 다음 목록에서만 최대 {MAX_TAGS_PER_TREND}개 �
 def build_trend_response_format(
     articles: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Build Groq strict Structured Outputs schema for the selected articles."""
+    """Build OpenAI strict Structured Outputs schema for the selected articles."""
     article_ids = [
         str(article["article_id"])
         for article in articles
@@ -187,11 +187,10 @@ def build_trend_response_format(
     schema = {
         "type": "object",
         "properties": {
-            "generated_at": {"type": "string"},
             "window_days": {"type": "integer"},
             "trends": {"type": "array", "items": trend_schema},
         },
-        "required": ["generated_at", "window_days", "trends"],
+        "required": ["window_days", "trends"],
         "additionalProperties": False,
     }
     return {
@@ -285,9 +284,8 @@ def validate_trend_payload(
     if len(trends) != TREND_COUNT:
         raise ValueError(f"Expected {TREND_COUNT} trends, got {len(trends)}")
 
-    generated_at = payload.get("generated_at")
-    if not isinstance(generated_at, str) or not generated_at.strip():
-        generated_at = datetime.now(timezone.utc).isoformat()
+    # Model-supplied dates are untrusted, including legacy response fields.
+    generated_at = datetime.now(timezone.utc).isoformat()
 
     window_days = payload.get("window_days")
     if not isinstance(window_days, int) or window_days <= 0:
@@ -360,21 +358,19 @@ def cluster_trends(
     if max_attempts < 1:
         raise ValueError("max_attempts must be at least 1")
     if client is None:
-        key = api_key or os.environ.get("GROQ_API_KEY", "")
+        key = resolve_api_key(api_key)
         if not key:
-            raise RuntimeError("GROQ_API_KEY is required to cluster trends")
+            raise RuntimeError("OPENAI_API_KEY is required to cluster trends")
         try:
-            from groq import Groq
+            client = create_client(key)
         except ImportError as exc:
-            raise RuntimeError("Install the groq package for trend clustering") from exc
-        client = Groq(api_key=key)
+            raise RuntimeError("Install the openai package for trend clustering") from exc
 
     base_messages = build_cluster_messages(selected, window_days=window_days)
     request: dict[str, Any] = {
-        "model": model,
+        **completion_options(model=model, max_tokens=max_tokens,
+                             reasoning_effort=reasoning_effort, temperature=temperature),
         "messages": base_messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
         "response_format": build_trend_response_format(selected),
     }
     if reasoning_effort:
@@ -410,11 +406,12 @@ def cluster_trends(
                 status_code=status,
             )
             diagnostics["attempts"].append(attempt_info)
-            if attempt < max_attempts and _is_transient_api_error(exc):
+            attempt_info["message"] = api_error_message(exc)
+            if attempt < max_attempts and _is_transient_api_error(exc) and not is_permanent_api_error(exc):
                 sleep_fn(retry_base_delay * (2 ** (attempt - 1)))
                 continue
             raise TrendClusteringError(
-                "Groq API 요청을 완료하지 못했습니다.", diagnostics
+                api_error_message(exc), diagnostics
             ) from exc
 
         choices = _attribute(response, "choices", []) or []
@@ -428,7 +425,7 @@ def cluster_trends(
         )
 
         try:
-            if not str(content).strip():
+            if attempt_info["finish_reason"] == "length" or not str(content).strip():
                 raise ValueError(
                     "Model returned no content "
                     f"(finish_reason={attempt_info['finish_reason']})"
@@ -445,6 +442,8 @@ def cluster_trends(
             )
             diagnostics["attempts"].append(attempt_info)
             if attempt < max_attempts:
+                if attempt_info["finish_reason"] == "length":
+                    request["max_completion_tokens"] = max(max_tokens, min(max_tokens * 2, 16000))
                 continue
             raise TrendClusteringError(
                 f"모델 응답 검증에 {max_attempts}회 연속 실패했습니다.", diagnostics

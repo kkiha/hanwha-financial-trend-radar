@@ -8,10 +8,18 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
-import os
 import re
 import time
 from typing import Any, Mapping, Sequence
+
+from rag_finance.llm.grounding import (
+    uses_indirect_language as _uses_indirect_language, CONDITIONAL_GUIDANCE,
+)
+
+from rag_finance.llm.openai_runtime import (
+    create_client, resolve_api_key, completion_options, api_error_message,
+    is_permanent_api_error,
+)
 
 from rag_finance.llm.trend_clusterer import (
     DEFAULT_MODEL,
@@ -53,21 +61,7 @@ EXPECTED_COMPANY_IDS = {
     "hanwha_asset_management",
     "hanwha_investment",
 }
-INDIRECT_LANGUAGE_MARKERS = (
-    "가능성",
-    "수 있다",
-    "수 있음",
-    "검토",
-    "기회",
-    "위험",
-    "요인",
-    "관찰",
-    "점검",
-    "영향을 받을",
-    "연결될",
-    "전이될",
-    "간접",
-)
+
 
 
 class PrerequisiteError(ValueError):
@@ -109,7 +103,7 @@ def validate_brief_prerequisites(
     articles: Sequence[Mapping[str, Any]],
     profiles: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Validate generation timestamps and every relevance reference before Groq."""
+    """Validate generation timestamps and every relevance reference before OpenAI."""
     trends_generated_at = trends_payload.get("generated_at")
     relevance_source_at = relevance_payload.get("source_trends_generated_at")
     if not isinstance(trends_generated_at, str) or not trends_generated_at.strip():
@@ -515,7 +509,7 @@ company_mentioned_in_articles가 false이면 situation_ko에는 실제 외부 �
 투자추천, 매수·매도 의견, 확정적인 미래 예측, 단정적인 전략 지시를 쓰지 마라.
 trend_id와 company_id만 그대로 반환하라. 관련성 등급, 태그, 근거 ID, 통계는 출력하지 마라."""
     return [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": system_prompt + "\n" + CONDITIONAL_GUIDANCE},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
 
@@ -575,9 +569,6 @@ def _normalize_text(value: str) -> str:
     return " ".join(value.split()).casefold()
 
 
-def _uses_indirect_language(value: str) -> bool:
-    normalized = _normalize_text(value)
-    return any(marker in normalized for marker in INDIRECT_LANGUAGE_MARKERS)
 
 
 def _evidence_mentions_company(
@@ -826,7 +817,7 @@ def generate_company_briefs(
     sleep_fn: Any = time.sleep,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Create all company briefs in one prose-only request, retrying at most once."""
+    """Validate each candidate independently; retry only failed candidates."""
     reference = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     if not 1 <= max_attempts <= DEFAULT_MAX_ATTEMPTS:
         raise ValueError("max_attempts must be 1 or 2")
@@ -859,134 +850,179 @@ def generate_company_briefs(
             message=str(exc) if isinstance(exc, PrerequisiteError) else "Brief 입력이 유효하지 않습니다.",
         )
 
-    has_main = any(groups["main"] for groups in selected.values())
-    if not has_main:
-        companies = [
-            {
-                "company_id": company_id,
-                "company_name": scoped_profiles[company_id]["company_name"],
-                "weekly_summary_ko": "",
-                "briefs": [],
-                "monitoring_items": [dict(item) for item in monitoring_items[company_id]],
-            }
-            for company_id in sorted(scoped_profiles)
-        ]
-        return {
-            "generated_at": reference.isoformat(),
-            "source_trends_generated_at": trends_payload.get("generated_at"),
-            "source_relevance_generated_at": relevance_payload.get("generated_at"),
-            "model": model,
-            "status": "GENERATED",
-            "companies": companies,
-        }
-
-    try:
-        base_messages = build_brief_messages(selected, context, scoped_profiles)
-        response_format = build_brief_response_format(selected)
-    except Exception as exc:
-        return _failure_payload(
-            trends_payload,
-            relevance_payload,
-            model=model,
-            now=reference,
-            status="NOT_GENERATED",
-            error_type="PrerequisiteError",
-            message="Brief 입력 범위를 구성하지 못했습니다.",
-        )
-
-    if client is None:
-        key = api_key or os.environ.get("GROQ_API_KEY", "")
-        if not key:
-            return _failure_payload(
-                trends_payload,
-                relevance_payload,
-                model=model,
-                now=reference,
-                status="UNGENERATED",
-                error_type="MissingApiKey",
-                message="GROQ_API_KEY가 없어 Brief를 생성하지 못했습니다.",
-            )
-        try:
-            from groq import Groq
-        except ImportError:
-            return _failure_payload(
-                trends_payload,
-                relevance_payload,
-                model=model,
-                now=reference,
-                status="UNGENERATED",
-                error_type="MissingDependency",
-                message="groq 패키지가 없어 Brief를 생성하지 못했습니다.",
-            )
-        client = Groq(api_key=key)
-
-    request: dict[str, Any] = {
-        "model": model,
-        "messages": base_messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "response_format": response_format,
+    companies = {
+        cid: {"company_id": cid, "company_name": scoped_profiles[cid]["company_name"],
+              "weekly_summary_ko": "", "briefs": [],
+              "monitoring_items": [dict(item) for item in monitoring_items[cid]],
+              "generation_status": "GENERATED", "failed_briefs": []}
+        for cid in sorted(scoped_profiles)
     }
-    if reasoning_effort:
-        request["reasoning_effort"] = reasoning_effort
+    candidates = [(cid, item) for cid, groups in selected.items() for item in groups["main"]]
+    diagnostics: dict[str, Any] = {}
+    accepted: dict[tuple[str, str], dict[str, Any]] = {}
+    summaries: dict[str, str] = {}
 
-    last_error: Exception | None = None
-    last_kind = "api"
-    correction = ""
-    for attempt in range(1, max_attempts + 1):
-        attempt_request = dict(request)
-        attempt_request["messages"] = list(base_messages)
-        if correction:
-            attempt_request["messages"].append(
-                {
-                    "role": "user",
-                    "content": (
-                        "이전 응답은 검증을 통과하지 못했다: "
-                        f"{correction}. 선정된 회사와 트렌드의 문장만 계약에 맞게 다시 출력하라."
-                    ),
-                }
-            )
+    def result() -> dict[str, Any]:
+        failed = False
+        for cid, company in companies.items():
+            company["briefs"] = [accepted[(cid, str(item["trend_id"]))]
+                                 for item in selected[cid]["main"] if (cid, str(item["trend_id"])) in accepted]
+            company["failed_briefs"] = [str(item["trend_id"]) for item in selected[cid]["main"]
+                                        if (cid, str(item["trend_id"])) not in accepted]
+            if company["failed_briefs"]:
+                failed = True
+                company["generation_status"] = "PARTIAL"
+                company["generation_note"] = f"Main Brief {len(company['failed_briefs'])}건 생성 미완료. 성공한 항목과 Monitoring은 표시합니다."
+            # Partial prose must not become a summary of failed/absent items.
+            if not company["failed_briefs"]:
+                company["weekly_summary_ko"] = summaries.get(cid, "") if len(company["briefs"]) == 1 else ""
+        return {"generated_at": reference.isoformat(),
+                "source_trends_generated_at": trends_payload.get("generated_at"),
+                "source_relevance_generated_at": relevance_payload.get("generated_at"),
+                "model": model, "status": "PARTIAL" if failed else "GENERATED",
+                "companies": list(companies.values()), "brief_calls": diagnostics}
+
+    if not candidates:
+        return result()
+    if client is None:
+        key = resolve_api_key(api_key)
+        setup_error = ""
+        if not key:
+            setup_error = "OPENAI_API_KEY가 없어 생성 요청을 실행하지 못했습니다."
+        else:
+            try:
+                client = create_client(key)
+            except ImportError:
+                setup_error = "openai 패키지가 없어 생성 요청을 실행하지 못했습니다."
+        if setup_error:
+            for cid, item in candidates:
+                diagnostics[f"{cid}__{item['trend_id']}"] = {
+                    "company_id": cid, "trend_id": item["trend_id"], "status": "failed",
+                    "attempts": [], "error_message": setup_error}
+            return result()
+
+    def explain(exc: Exception, finish: str) -> tuple[str, str]:
+        if finish == "length":
+            return "output_truncated", "출력 토큰 한도에 도달해 응답이 잘렸습니다."
+        msg = str(exc)
+        field = next((f for f in ("weekly_summary_ko", *BRIEF_TEXT_FIELDS, "watch_next") if f in msg), "응답")
+        rules = (
+            ("exceeds", "length_limit", "길이 제한을 초과했습니다."),
+            ("conditional", "unsupported_assertion", "근거에 회사가 없는데 조건부 표현으로 설명하지 않았습니다."),
+            ("unsupported direct action", "unsupported_assertion", "근거에 없는 회사 행동을 단정했습니다."),
+            ("copies an article title", "copied_headline", "기사 제목을 그대로 복사했습니다."),
+            ("copied across", "repeated_prose", "다른 회사의 문장과 동일합니다."),
+            ("Repeated", "repeated_prose", "이미 채택한 항목의 문장을 반복했습니다."),
+            ("repeats", "repeated_prose", "관찰 항목이 중복됐습니다."),
+            ("exactly 2", "watch_count", "후속 관찰은 정확히 2개여야 합니다."),
+            ("Korean", "missing_korean", "한국어 문장이 필요합니다."),
+            ("non-empty", "empty_field", "필수 문장이 비어 있습니다."),
+            ("no content", "empty_response", "모델이 빈 응답을 반환했습니다."),
+            ("not valid JSON", "invalid_json", "JSON을 해석할 수 없습니다."),
+            ("missing", "missing_fields", "필수 항목이 빠졌거나 형식이 다릅니다."),
+            ("omitted", "missing_item", "요청한 회사 또는 Brief가 누락됐습니다."),
+            ("Duplicate", "duplicate_item", "회사 또는 Brief가 중복됐습니다."),
+        )
+        for marker, code, text in rules:
+            if marker in msg:
+                return code, f"{field}: {text}"
+        if isinstance(exc, (TypeError, ValueError)):
+            return "invalid_structure", "요청한 회사·트렌드 또는 응답 자료형이 검증 기준과 다릅니다."
+        status = getattr(exc, "status_code", None)
+        return "api_error", api_error_message(exc)
+
+    def consume(parsed: Any, cid: str, item: Mapping[str, Any]) -> None:
+        if not isinstance(parsed, Mapping) or set(parsed) != {"companies"} or not isinstance(parsed["companies"], list):
+            raise ValueError("missing companies array")
+        matches = [c for c in parsed["companies"] if isinstance(c, Mapping) and c.get("company_id") == cid]
+        if len(matches) != 1:
+            raise ValueError("Model omitted or Duplicate company")
+        raw = dict(matches[0])
+        if not isinstance(raw.get("briefs"), list):
+            raise ValueError("missing briefs array")
+        matches = [b for b in raw["briefs"] if isinstance(b, Mapping) and b.get("trend_id") == item["trend_id"]]
+        if len(matches) != 1:
+            raise ValueError("Model omitted or Duplicate brief")
+        raw["briefs"] = matches
+        scope = {cid: {"main": [dict(item)], "monitoring": []}}
+        validated = validate_and_combine_brief_payload(
+            {"companies": [raw]}, scope, context, {cid: scoped_profiles[cid]}, {cid: []})[0]
+        brief = validated["briefs"][0]
+        # Preserve the original cross-item safeguards when validating in isolation.
+        for (other_cid, _), other in accepted.items():
+            fields = BRIEF_TEXT_FIELDS if other_cid == cid else ("company_relevance_ko", "business_impact_ko")
+            for field in fields:
+                if _normalize_text(brief[field]) == _normalize_text(other[field]):
+                    raise ValueError(f"Repeated {field}")
+            if other_cid == cid and set(map(_normalize_text, brief["watch_next"])) & set(map(_normalize_text, other["watch_next"])):
+                raise ValueError("Repeated watch_next")
+        accepted[(cid, str(item["trend_id"]))] = brief
+        summaries[cid] = validated["weekly_summary_ko"]
+
+    def request(scope, targets, attempt, budget, correction=""):
+        finish = ""
+        parsed = None
+        error = None
         try:
-            response = client.chat.completions.create(**attempt_request)
+            messages = build_brief_messages(scope, context, {cid: scoped_profiles[cid] for cid in scope})
+            if correction:
+                messages.append({"role": "user", "content": "이전 응답 검증 오류: " + correction + " 실패한 이 항목만 수정하세요. 근거 없는 사실은 추가하지 마세요."})
+            kwargs = dict(**completion_options(model=model, max_tokens=budget,
+                          reasoning_effort=reasoning_effort, temperature=temperature),
+                          messages=messages, response_format=build_brief_response_format(scope))
+            if reasoning_effort:
+                kwargs["reasoning_effort"] = reasoning_effort
+            response = client.chat.completions.create(**kwargs)
             choices = _attribute(response, "choices", []) or []
             choice = choices[0] if choices else None
-            message = _attribute(choice, "message")
-            content = _attribute(message, "content", "") or ""
-            if not str(content).strip():
-                raise ValueError("Model returned no content")
+            finish = _attribute(choice, "finish_reason", "") or ""
+            content = _attribute(_attribute(choice, "message"), "content", "") or ""
+            if finish == "length" or not str(content).strip():
+                raise ValueError("Model returned no content or truncated output")
             parsed = parse_structured_json(str(content))
-            companies = validate_and_combine_brief_payload(
-                parsed, selected, context, scoped_profiles, monitoring_items
-            )
         except Exception as exc:
-            last_error = exc
-            last_kind = "validation" if isinstance(exc, (TypeError, ValueError)) else "api"
-            correction = str(exc) if last_kind == "validation" else "Groq API request failed"
-            if attempt < max_attempts:
-                sleep_fn(retry_base_delay * (2 ** (attempt - 1)))
+            error = exc
+        for cid, item in targets:
+            key = f"{cid}__{item['trend_id']}"
+            record = diagnostics.setdefault(key, {"company_id": cid, "trend_id": item["trend_id"], "attempts": []})
+            detail = {"attempt": attempt, "max_tokens": budget,
+                      "finish_reason": finish if finish in {"stop", "length", "content_filter"} else ""}
+            try:
+                if error is not None:
+                    raise error
+                consume(parsed, cid, item)
+            except Exception as exc:
+                code, message = explain(exc, finish)
+                detail.update(outcome="validation_error" if isinstance(exc, (TypeError, ValueError)) else "api_error",
+                              error_code=code, message=message, error_type=type(exc).__name__)
+                status = getattr(exc, "status_code", None)
+                if isinstance(status, int):
+                    detail["http_status"] = status
+                if is_permanent_api_error(exc):
+                    detail["retryable"] = False
+                if status == 429:
+                    headers = getattr(getattr(exc, "response", None), "headers", {}) or {}
+                    try:
+                        detail["retry_after_seconds"] = min(60.0, max(0.0, float(headers.get("retry-after", retry_base_delay))))
+                    except (TypeError, ValueError):
+                        pass
+                record.update(status="failed", error_message=message)
+            else:
+                detail["outcome"] = "success"
+                record.update(status="success")
+                record.pop("error_message", None)
+            record["attempts"].append(detail)
+
+    request(selected, candidates, 1, max_tokens)
+    if max_attempts > 1:
+        for cid, item in candidates:
+            if (cid, str(item["trend_id"])) in accepted:
                 continue
-            break
-
-        return {
-            "generated_at": reference.isoformat(),
-            "source_trends_generated_at": trends_payload.get("generated_at"),
-            "source_relevance_generated_at": relevance_payload.get("generated_at"),
-            "model": model,
-            "status": "GENERATED",
-            "companies": companies,
-        }
-
-    message = (
-        f"Groq 응답이 {max_attempts}회 Brief 출력 계약을 충족하지 못했습니다."
-        if last_kind == "validation"
-        else f"Groq Brief 생성 요청이 {max_attempts}회 실패했습니다."
-    )
-    return _failure_payload(
-        trends_payload,
-        relevance_payload,
-        model=model,
-        now=reference,
-        status="UNGENERATED",
-        error_type=type(last_error).__name__ if last_error else "UnknownError",
-        message=message,
-    )
+            record = diagnostics[f"{cid}__{item['trend_id']}"]
+            last = record["attempts"][-1]
+            if last.get("retryable") is False:
+                continue
+            budget = max(max_tokens, min(max_tokens * 2, 16000)) if last.get("error_code") == "output_truncated" else max_tokens
+            sleep_fn(last.get("retry_after_seconds", retry_base_delay))
+            request({cid: {"main": [item], "monitoring": []}}, [(cid, item)], 2, budget, record["error_message"])
+    return result()

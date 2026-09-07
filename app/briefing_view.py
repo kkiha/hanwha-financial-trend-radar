@@ -6,6 +6,7 @@ from typing import Any, Mapping
 from urllib.parse import urlsplit
 
 from app.trend_feed_data import watch_area_label
+from app.evidence_labels import label_event_reports
 
 
 def safe_url(value: Any) -> str:
@@ -42,13 +43,16 @@ def prepare_view(payload: Mapping[str, Any]) -> dict[str, Any]:
         "success": "성공", "partial": "부분 완료", "failed": "실패",
     }.get(refresh.get("outcome"), "갱신 기록 없음")
     view["refresh_message"] = str(refresh.get("message") or "")
-    if refresh.get("relevance_calls"):
+    if refresh.get("relevance_calls") or refresh.get("brief_calls"):
         view["refresh_message"] = refresh_feedback(refresh)["message"]
 
     def sanitize(value: Any) -> None:
         if isinstance(value, dict):
             if "url" in value:
                 value["url"] = safe_url(value["url"])
+            for key in ("articles", "evidence_articles"):
+                if isinstance(value.get(key), list):
+                    label_event_reports(value[key])
             for child in value.values():
                 sanitize(child)
         elif isinstance(value, list):
@@ -79,6 +83,9 @@ def refresh_feedback(report: Mapping[str, Any]) -> dict[str, str]:
               if call.get("status") == "failed"]
     if failed:
         parts.append("회사 분석 미완료: " + ", ".join(failed))
+    for call in (report.get("brief_calls") or {}).values():
+        if call.get("status") == "failed":
+            parts.append(f"{names.get(call.get('company_id'), '회사')} / {call.get('trend_id', '')}: {call.get('error_message', 'Brief 생성 실패')}")
     return {"outcome": outcome, "message": " · ".join(parts)}
 
 def company_summary(company: Mapping[str, Any], fallback_reason: str = "") -> str:
@@ -93,6 +100,9 @@ def company_summary(company: Mapping[str, Any], fallback_reason: str = "") -> st
 
     briefs = company.get("briefs") or []
     monitoring = company.get("monitoring_items") or []
+    if company.get("generation_status") == "PARTIAL":
+        return (f"Main Brief 일부 생성 미완료 · 현재 확인 가능한 Main Brief {len(briefs)}건, "
+                f"Monitoring {len(monitoring)}건입니다. 관련 이슈가 없다는 뜻은 아닙니다.")
     if briefs:
         summary = str(company.get("weekly_summary_ko") or "").strip()
         return summary or (

@@ -435,8 +435,8 @@ class RelevanceCallTest(unittest.TestCase):
             sent = json.loads(call["messages"][1]["content"])
             self.assertEqual(sent["company_profile"]["company_id"], company_id)
             self.assertEqual(len(sent["trends"]), 3)
-            self.assertEqual(call["max_tokens"], 1200)
-            self.assertEqual(call["reasoning_effort"], "low")
+            self.assertEqual(call["max_completion_tokens"], 1200)
+            self.assertEqual(call["reasoning_effort"], "none")
             self.assertEqual(call["response_format"]["type"], "json_schema")
             self.assertTrue(call["response_format"]["json_schema"]["strict"])
 
