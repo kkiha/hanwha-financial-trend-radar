@@ -114,3 +114,22 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 :host{display:block;min-width:0;background:var(--paper);font-family:BriefingPretendard,"Malgun Gothic",Arial,sans-serif}.shell{border-top:3px solid var(--orange)}
 
 .refresh-control{display:flex;align-items:center;gap:10px}.refresh-status{max-width:650px;font-size:11px;color:var(--muted);line-height:1.7}.refresh-status[data-outcome=partial],.refresh-status[data-outcome=failed]{color:#914d13}.refresh-control .button{min-height:34px;padding:7px 12px;white-space:nowrap}.is-refreshing{opacity:.75}.processing-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--orange);margin-right:5px}.overview-alert{padding:10px 15px;background:#fff3e7;border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:12px}.trend-why{border-left:2px solid var(--orange);padding-left:12px;margin:16px 0}.evidence-chart{display:flex;align-items:flex-end;height:45px;gap:5px;margin-top:12px}.evidence-chart span{background:#607f97;flex:1;min-width:0}.chart-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:5px}.print-help{font-size:11px;color:var(--muted);padding:0 20px 8px}.empty-trends{padding:24px}.company-grid.monitoring-grid{grid-template-columns:repeat(2,minmax(0,1fr))}@media(max-width:720px){.process{gap:10px}.refresh-control{width:100%;align-items:flex-start;flex-wrap:wrap}.refresh-status{max-width:100%}.company-grid.monitoring-grid{grid-template-columns:1fr}} 
+/* Separate overview, company briefing and discussion routes. */
+[hidden]{display:none!important}
+a.button,a.text-link{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.page-nav{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:24px 0}
+.tabs a{display:inline-block;padding:9px 13px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:12px;font-weight:650}
+.tabs a[aria-current=page]{background:white;box-shadow:0 1px 6px #10283c15}
+#company-detail{margin-top:0;padding-top:0;border-top:0}
+#discussion-page{max-width:1080px;margin:0 auto}
+#discussion-body>h2{font-size:21px;margin:30px 0 16px}
+.discussion-company{margin:24px 0 36px}.discussion-company>h3{font-size:21px}
+.compact-option{display:flex;align-items:center;gap:7px;font-size:12px}
+#trend-list .trend{cursor:default}.company-card .summary{font-size:13px}
+@media(max-width:720px){.page-nav,.detail-head{align-items:flex-start;flex-wrap:wrap}.tabs{flex-wrap:wrap}.dialog-actions{flex-wrap:wrap}.compact-option{width:100%}.tabs a{padding:8px}}
+
+/* One keyboard-accessible link per company card. */
+a.company-card{color:var(--ink);text-decoration:none;cursor:pointer;transition:border-color .15s,background-color .15s,box-shadow .15s}
+a.company-card:hover{background:#f8fafc;border-color:#9cb0c1;box-shadow:0 6px 20px #102a4012}
+a.company-card:focus-visible{outline:3px solid #b85c00;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){a.company-card{transition:none}}
