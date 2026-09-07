@@ -401,8 +401,9 @@ def refresh(
         report.update(
             outcome="partial",
             stage="relevance",
-            error_code="relevance_unclassified",
-            error=RELEVANCE_FAILURE_MESSAGE,
+            error_code="relevance_partial" if relevance_status == "PARTIAL" else "relevance_unclassified",
+            error=("회사 관련성 분류가 일부 완료됐습니다. 성공한 회사의 결과를 저장했으며, 실패한 회사는 아래 사유를 확인해 주세요."
+                   if relevance_status == "PARTIAL" else RELEVANCE_FAILURE_MESSAGE),
         )
 
     if skip_briefs:

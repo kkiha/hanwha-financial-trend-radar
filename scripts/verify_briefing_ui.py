@@ -55,7 +55,7 @@ def fake_refresh():
     time.sleep(.3)
     if call==3:
         raise RuntimeError("fixture failure")
-    return {"outcome":"partial" if call==2 else "success", "clustered":True,"trends":1,"summary":"검증 갱신 "+str(call),"error":"검증용 회사 분석 미완료" if call==2 else ""}
+    return {"outcome":"partial" if call==2 else "success", "clustered":True,"trends":1,"summary":"검증 갱신 "+str(call),"error":"검증용 회사 분석 미완료" if call==2 else "", "relevance_calls":{"hanwha_life":{"status":"failed","error_message":"평가 항목 2 · 조건부 표현이 없습니다."}} if call==2 else {}}
 # Callbacks execute before the next script run. Keep the fake installed for the
 # entire isolated server lifetime, including that pre-run callback phase.
 import scripts.refresh_trend_feed as refresh_module
@@ -152,7 +152,7 @@ def main() -> None:
 
                     # Real component -> Streamlit callback -> component data refresh.
                     title = page.locator(".trend-title").inner_text()
-                    for label in ("검증 갱신 1", "검증용 회사 분석 미완료", "기존 결과를 유지"):
+                    for label in ("검증 갱신 1", "한화생명: 평가 항목 2 · 조건부 표현이 없습니다.", "기존 결과를 유지"):
                         page.locator("#refresh-data").click()
                         expect(page.locator("#refresh-status")).to_contain_text(label, timeout=20000)
                         expect(page.locator("#refresh-data")).to_be_enabled()

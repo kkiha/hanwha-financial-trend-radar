@@ -52,7 +52,7 @@ function reportDocument(){
 $('download-report').onclick=()=>{const url=URL.createObjectURL(new Blob([reportDocument()],{type:'text/html;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=reportName+($('compact-export').checked?'_한장요약':'')+'.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 $('logo').src=data.logo;$('stamp').innerHTML=`<span class="badge">${esc(data.status)}</span><br>표시 데이터 ${esc(stamp(data.generated_at))} KST${data.refresh?.attempted_at?`<br>최근 시도 ${esc(stamp(data.refresh.attempted_at))} · ${esc(data.refresh_label)}`:''}`;
 $('stats').innerHTML=[['분석 기간',data.window_days,'일'],['수집 기사',data.stats.article_count,'건'],['고유 출처',data.stats.source_count,'개'],['핵심 트렌드',trends.length,'건']].map(([l,v,u])=>`<div><small>${l}</small><strong>${Number(v).toLocaleString()}<em>${u}</em></strong></div>`).join('');
-const status=$('refresh-status');status.textContent=data.feedback?.message||data.notice||data.refresh_message||'공개 기사를 수집하고 회사별 사업 관점으로 분석합니다.';status.dataset.outcome=data.feedback?.outcome||data.refresh?.outcome||'';
+const status=$('refresh-status');status.textContent=data.feedback?.message||data.refresh_message||data.notice||'공개 기사를 수집하고 회사별 사업 관점으로 분석합니다.';status.dataset.outcome=data.feedback?.outcome||data.refresh?.outcome||'';
 $('refresh-data').disabled=false;$('refresh-data').textContent='최신 데이터 불러오기';
 $('refresh-data').onclick=()=>{const button=$('refresh-data');button.disabled=true;button.textContent='수집·분석 중…';status.textContent='기사를 수집하고 트렌드·회사별 브리핑을 분석하고 있습니다. 기존 결과는 계속 확인할 수 있습니다.';setTriggerValue('refresh',Date.now());};
 function route(){

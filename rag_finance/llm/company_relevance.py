@@ -568,6 +568,45 @@ def _safe_error_code(exc: Exception) -> str | None:
     return str(code) if code else None
 
 
+def validation_reason(exc: Exception, *, finish_reason: str = "") -> str:
+    """Return bounded, allowlisted explanations, never model prose or API bodies."""
+    if finish_reason == "length":
+        return "출력 토큰 한도에 도달해 응답이 잘렸습니다."
+    message = str(exc)
+    rules = (
+        ("Model returned no content", "모델이 빈 응답을 반환했습니다."),
+        ("not valid JSON", "응답을 JSON으로 해석하지 못했습니다."),
+        ("must be a JSON object", "응답 최상위 값이 JSON 객체가 아닙니다."),
+        ("Incomplete trend/company combinations", "요청한 트렌드별 평가가 빠졌거나 요청하지 않은 평가가 포함됐습니다."),
+        ("conditionally", "근거에 회사가 직접 등장하지 않는데 관련성을 조건부 표현으로 설명하지 않았습니다."),
+        ("uses topic IDs outside", "회사 프로필에 없는 감시주제 ID를 사용했습니다."),
+        ("uses business tags outside", "회사 프로필에 없는 업무 태그를 사용했습니다."),
+        ("uses evidence outside", "해당 트렌드에 속하지 않는 근거 기사 ID를 사용했습니다."),
+        ("requires a Korean reason_ko", "관련성 판단 이유(reason_ko)가 비어 있거나 한국어가 아닙니다."),
+        ("requires a transmission path", "관련성이 high/medium인데 전이 경로·주제·태그·근거 중 필수 값이 빠졌습니다."),
+        ("none must have an empty", "관련성이 none인데 전이 경로·주제·태그·근거가 남아 있습니다."),
+        ("missing fields", "필수 평가 필드가 누락됐습니다."),
+        ("unexpected fields", "허용되지 않은 평가 필드가 포함됐습니다."),
+        ("unknown trend_id", "요청하지 않은 트렌드 ID를 반환했습니다."),
+        ("unknown company_id", "요청하지 않은 회사 ID를 반환했습니다."),
+        ("Duplicate trend/company", "같은 회사·트렌드 평가가 중복됐습니다."),
+        ("invalid relevance", "허용되지 않은 관련성 등급을 반환했습니다."),
+        ("Copied reason_ko", "회사 간 관련성 판단 이유가 동일하게 반복됐습니다."),
+        ("contains duplicate", "목록 필드에 중복 값이 있습니다."),
+        ("non-empty strings", "목록에 빈 값 또는 문자열이 아닌 값이 있습니다."),
+        ("must be an array", "목록이어야 하는 필드의 자료형이 잘못됐습니다."),
+        ("requires an evaluations array", "evaluations 평가 목록이 없거나 자료형이 잘못됐습니다."),
+        ("must contain only the evaluations", "응답 최상위에는 evaluations 필드만 있어야 합니다."),
+        ("must be a string", "문자열이어야 하는 필드의 자료형이 잘못됐습니다."),
+        ("must be an object", "평가 항목이 객체가 아닙니다."),
+    )
+    reason = next((text for marker, text in rules if marker in message), "응답 검증 중 분류되지 않은 값 또는 자료형 오류가 발생했습니다.")
+    item = re.search(r"Evaluation #(\d{1,4})\b", message)
+    field = next((name for name in sorted(EVALUATION_FIELDS) if name in message), None)
+    context = (f"평가 항목 {item.group(1)} · " if item else "") + (f"{field} · " if field else "")
+    return context + reason
+
+
 def _retry_after_seconds(exc: Exception, *, now: datetime) -> float | None:
     headers = _attribute(exc, "headers")
     if headers is None:
@@ -700,6 +739,7 @@ def classify_company_relevance(
                 "max_tokens": max_tokens,
                 "wait_seconds": [],
                 "error_type": type(exc).__name__,
+                "error_message": "관련성 요청 입력을 구성하지 못했습니다. " + validation_reason(exc),
             }
             continue
 
@@ -729,6 +769,7 @@ def classify_company_relevance(
         company_succeeded = False
         for attempt in range(1, max_attempts + 1):
             call_debug["attempts"] = attempt
+            finish_reason = ""
             attempt_request = dict(request)
             attempt_request["messages"] = list(base_messages)
             if correction:
@@ -745,6 +786,7 @@ def classify_company_relevance(
                 response = client.chat.completions.create(**attempt_request)
                 choices = _attribute(response, "choices", []) or []
                 choice = choices[0] if choices else None
+                finish_reason = _attribute(choice, "finish_reason", "") or ""
                 message = _attribute(choice, "message")
                 content = _attribute(message, "content", "") or ""
                 if not str(content).strip():
@@ -766,6 +808,16 @@ def classify_company_relevance(
                 if error_code := _safe_error_code(exc):
                     call_debug["error_code"] = error_code
                 is_validation = isinstance(exc, (TypeError, ValueError))
+                detail = validation_reason(exc, finish_reason=finish_reason) if is_validation else (
+                    f"API 요청 실패 (HTTP {status})." if status else "API 연결 또는 요청 처리에 실패했습니다."
+                )
+                call_debug["error_message"] = detail
+                call_debug.setdefault("attempt_details", []).append({
+                    "attempt": attempt, "outcome": "validation_error" if is_validation else "api_error",
+                    "error_type": type(exc).__name__, "message": detail,
+                    "finish_reason": finish_reason if finish_reason in {"stop", "length", "content_filter"} else "",
+                    "http_status": status,
+                })
                 correction = str(exc) if is_validation else "Groq API request failed"
                 if status == 413 or attempt >= max_attempts:
                     break
@@ -786,6 +838,8 @@ def classify_company_relevance(
             call_debug.pop("error_type", None)
             call_debug.pop("http_status", None)
             call_debug.pop("error_code", None)
+            call_debug.pop("error_message", None)
+            call_debug.setdefault("attempt_details", []).append({"attempt": attempt, "outcome": "success"})
             company_succeeded = True
             break
 

@@ -42,6 +42,8 @@ def prepare_view(payload: Mapping[str, Any]) -> dict[str, Any]:
         "success": "성공", "partial": "부분 완료", "failed": "실패",
     }.get(refresh.get("outcome"), "갱신 기록 없음")
     view["refresh_message"] = str(refresh.get("message") or "")
+    if refresh.get("relevance_calls"):
+        view["refresh_message"] = refresh_feedback(refresh)["message"]
 
     def sanitize(value: Any) -> None:
         if isinstance(value, dict):
@@ -67,11 +69,13 @@ def refresh_feedback(report: Mapping[str, Any]) -> dict[str, str]:
         parts.append(summary)
     if outcome != "success":
         error = str(report.get("error") or report.get("message") or "일부 분석을 완료하지 못했습니다.")
+        if report.get("relevance_status") == "PARTIAL" and report.get("stage") == "relevance":
+            error = "회사 관련성 분류가 일부 완료됐습니다. 성공한 회사의 결과는 저장했습니다."
         parts.append(error)
         if not report.get("clustered") and "기존" not in error:
             parts.append("기존 결과를 유지합니다.")
     names = {"hanwha_life": "한화생명", "hanwha_investment": "한화투자증권", "hanwha_asset_management": "한화자산운용"}
-    failed = [names.get(cid, cid) for cid, call in (report.get("relevance_calls") or {}).items()
+    failed = [names.get(cid, cid) + (": " + str(call["error_message"]) if call.get("error_message") else "") for cid, call in (report.get("relevance_calls") or {}).items()
               if call.get("status") == "failed"]
     if failed:
         parts.append("회사 분석 미완료: " + ", ".join(failed))
