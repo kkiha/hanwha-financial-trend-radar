@@ -1,14 +1,4 @@
-langchain
-langchain-community
-sentence-transformers
-faiss-cpu
-beautifulsoup4
-tqdm
-numpy
-omegaconf
-reportlab
-protobuf
-groq>=1.7.0,<2
-python-dotenv>=1.0
-requests>=2.31
 streamlit>=1.63,<2
+groq>=1.7.0,<2
+python-dotenv>=1.0,<2
+requests>=2.31,<3

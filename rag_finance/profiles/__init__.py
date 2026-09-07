@@ -1,5 +1,5 @@
 """Validated company profile loading."""
 
-from .loader import load_company_profiles
+from .company_profiles import load_all_company_profiles
 
-__all__ = ["load_company_profiles"]
+__all__ = ["load_all_company_profiles"]

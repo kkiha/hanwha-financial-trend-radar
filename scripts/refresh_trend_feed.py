@@ -96,11 +96,11 @@ AI_REQUEST_MESSAGE = (
     "AI 분석 요청을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요. "
     "기존 트렌드 결과를 유지합니다."
 )
-DEFAULT_CONFIG_PATH = Path("configs/trend_demo.yaml")
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "configs/service.json"
 
 
 def load_env_file(path: str | Path = ".env") -> None:
-    """Optional .env support, mirroring scripts/generate_report.py."""
+    """Load local API credentials without overriding server environment values."""
     try:
         from dotenv import load_dotenv  # type: ignore
     except ImportError:

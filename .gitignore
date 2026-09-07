@@ -1,28 +1,21 @@
-# Python
+# Python and local environment
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
+.venv-*/
 venv/
 .env
+.env.*
+!.env.example
+.streamlit/secrets.toml
 
-# Data/Outputs
-data/
-*.parquet
-*.feather
-
-# Prototype snapshot inputs are intentionally versioned.
-!data/
+# Generated data; keep only the initial display fallback
 data/*
-!data/demo_corpus/
-!data/demo_corpus/**
-!data/sample_signals/
-!data/sample_signals/**
-!data/demo_evidence/
-!data/demo_evidence/**
 !data/demo_outputs/
-!data/demo_outputs/**
+data/demo_outputs/*
+!data/demo_outputs/trend_feed_fallback.json
 
-# Jupyter/IDE
+# Development tools
 .ipynb_checkpoints/
 .vscode/
 .idea/
