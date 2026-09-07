@@ -1,0 +1,116 @@
+
+:host{--navy:#0b2138;--navy2:#163550;--ink:#162c42;--muted:#657789;--orange:#ef7925;--line:#dfe5e9;--paper:#f3f5f6;--white:#fff;--radius:15px;--shadow:0 8px 26px #152c4408;font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;color:var(--ink);background:var(--paper);font-synthesis:none}
+*{box-sizing:border-box}:host{margin:0;border-top:3px solid var(--orange)}button,a{ -webkit-tap-highlight-color:transparent}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #bb5308;outline-offset:4px}a{color:inherit;text-underline-offset:3px}button{transition:background .15s,border-color .15s}h1,h2,h3,p{margin:0}button:disabled{cursor:default;opacity:.5}.shell{max-width:1440px;padding:0 36px 36px;margin:auto}.header{height:79px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:19px}.brand img{width:97px;height:auto}.brand-text{border-left:1px solid #cbd5dc;padding-left:19px}.brand-text strong{display:block;font-size:14px;letter-spacing:.015em}.brand-text small{display:block;color:var(--muted);font-size:9px;letter-spacing:.16em;margin-top:6px}.header-right{display:flex;gap:15px;align-items:center}.snapshot{font-size:10px;color:var(--muted);text-align:right;line-height:1.8}.badge{display:inline-flex;align-items:center;gap:6px;border-radius:20px;padding:4px 9px;font-size:10px;font-weight:700;background:#eaf0f3;color:#435d70}.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}.button{border:1px solid var(--line);border-radius:7px;background:white;padding:10px 14px;font-size:11px;font-weight:700;color:var(--ink);min-height:40px}.button:hover{background:#eaf0f4}.button.dark{background:var(--navy);color:#fff;border-color:var(--navy)}.button.dark:hover{background:var(--navy2)}.button.orange{background:var(--orange);color:#10233a;border-color:var(--orange)}.eyebrow{font-size:9px;font-weight:750;letter-spacing:.14em;color:var(--muted)}
+.hero{position:relative;background:var(--navy);border-radius:17px;color:white;display:grid;grid-template-columns:1.12fr 1fr;overflow:hidden;min-height:175px;box-shadow:0 10px 25px #102a4010}.hero-copy{padding:28px 32px;position:relative;z-index:1}.hero .eyebrow{color:#ffb67d;display:flex;align-items:center;gap:9px}.hero .eyebrow:before{content:"";width:20px;height:2px;background:var(--orange)}h1{font-size:29px;line-height:1.35;letter-spacing:-1.3px;margin:10px 0 9px}.hero-copy p{font-size:11px;color:#bdcbd7;line-height:1.7}.hero-right{display:flex;align-items:center;justify-content:flex-end;padding:22px 32px;gap:26px;position:relative}.orb{position:absolute;width:320px;height:320px;border:1px solid #ffffff0c;border-radius:50%;right:-150px;top:-90px;box-shadow:0 0 0 45px #ffffff03,0 0 0 90px #ffffff02}.radar{height:108px;width:108px;border:1px solid #ffffff28;border-radius:50%;position:relative;background:repeating-radial-gradient(circle,transparent 0 17px,#ffffff10 18px 19px);flex-shrink:0;display:grid;place-items:center}.radar:before{content:"";position:absolute;inset:0;background:conic-gradient(from 15deg,transparent 270deg,#ee79253b 345deg,transparent 346deg);border-radius:50%}.radar b{font-size:28px;font-weight:600;position:relative}.radar i{position:absolute;right:14px;top:24px;width:7px;height:7px;background:var(--orange);border-radius:50%;box-shadow:0 0 0 5px #ef792521}.hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:18px 29px;position:relative}.hero-stats small{display:block;color:#afc1d1;font-size:9px}.hero-stats strong{font-size:23px;letter-spacing:-.7px;display:block;margin-top:4px}.hero-stats em{font-size:10px;font-style:normal;color:#c2ced8;margin-left:4px}.process{display:flex;justify-content:space-between;align-items:center;padding:12px 3px;gap:12px;font-size:10px;color:var(--muted)}.process strong{color:var(--ink);font-weight:600}.process span{line-height:1.7}.flow{letter-spacing:.015em}.flow b{color:#b6c1c9;margin:0 9px}.section-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:13px 0 11px}.section-top h2{font-size:17px;letter-spacing:-.6px}.section-top p{color:var(--muted);font-size:10px}.section-top h2 small{font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;margin-left:10px}.main-grid{display:grid;grid-template-columns:1.42fr 1fr;gap:18px}.panel{background:white;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);min-width:0}.trend-list{padding:0 20px}.trend{display:grid;grid-template-columns:34px minmax(0,1fr) 56px;gap:12px;align-items:center;text-align:left;border:0;border-bottom:1px solid #e9edef;width:100%;background:white;padding:22px 0;min-height:108px;color:var(--ink)}.trend:last-child{border-bottom:0}.trend:hover{background:#f9fafb}.rank{width:30px;height:32px;border-radius:7px;display:grid;place-items:center;background:#f0f3f5;color:#7c8f9e;font-size:11px;font-weight:700}.trend[aria-pressed=true] .rank{background:#fff0e3;color:#aa4d09}.trend-title{font-size:13px;font-weight:700;line-height:1.6;display:block;letter-spacing:-.25px}.trend-desc{font-size:10px;color:var(--muted);line-height:1.7;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;margin-top:5px}.trend-count{font-size:10px;text-align:right;color:var(--muted);line-height:1.8}.trend-count b{font-size:14px;color:var(--ink);display:block}.trend[aria-pressed=true] .trend-title{color:#a44c10}.company-preview{padding:21px 23px;background:linear-gradient(140deg,#fff,#f8fafb);display:flex;flex-direction:column}.preview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.tabs{display:flex;gap:3px;background:#edf1f4;border-radius:6px;padding:3px}.tabs button{border:0;background:transparent;font-size:10px;color:#5d7283;padding:7px 9px;border-radius:4px;min-height:30px}.tabs button[aria-pressed=true]{background:white;box-shadow:0 2px 5px #10233a0d;color:var(--ink);font-weight:700}.preview-name{font-size:19px;letter-spacing:-.6px;margin:0 0 12px}.summary{font-size:12px;line-height:1.9;color:#40576b}.preview-summary{border-left:3px solid var(--orange);padding:8px 0 8px 13px;margin-bottom:13px}.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.link-note{font-size:10px;color:var(--muted);line-height:1.7;border-top:1px solid var(--line);padding-top:10px;margin-top:auto}.link-note b{color:var(--ink);font-weight:600}.preview-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px}.text-link{border:0;background:transparent;color:#ad500d;padding:6px 0;font-size:10px;font-weight:700}.tag{display:inline-block;border-radius:4px;background:#edf2f5;color:#536b7d;padding:3px 7px;font-size:9px;line-height:1.5}.company-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.company-card{padding:18px 20px;position:relative}.company-card.selected{border-color:#8ca1b1;box-shadow:inset 0 2px var(--navy)}.company-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.company-top h3{font-size:13px}.company-mark{font-size:10px;width:25px;height:25px;display:grid;place-items:center;border-radius:6px;background:#f0f3f5;color:#b35412}.company-card .summary{font-size:10px;min-height:57px}.company-foot{border-top:1px solid #e9edef;display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:8px;font-size:9px;color:var(--muted)}.company-foot b{color:var(--ink)}
+.detail-wrap{margin-top:31px;scroll-margin-top:20px}.detail-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:18px}.detail-head h2{font-size:24px;letter-spacing:-1px;margin-top:6px}.detail-head .eyebrow{color:#b25816}.detail-summary{padding:18px 22px;background:#eaf0f4;border:1px solid #dce5ec;border-radius:11px;margin-bottom:18px;display:grid;grid-template-columns:115px 1fr;gap:20px}.detail-summary strong{font-size:11px;line-height:1.8}.detail-summary p{font-size:12px;line-height:1.9}.detail-cols{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(260px,1fr);gap:20px}.brief-card{padding:24px;margin-bottom:16px;border-top:3px solid var(--navy);scroll-margin-top:20px}.brief-card.related,.monitor.related{border-color:#c9946d}.brief-top{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.brief-top h3{font-size:18px;line-height:1.65;letter-spacing:-.5px}.label{font-size:9px;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:15px 0 7px}.body-copy{font-size:12px;line-height:1.9;color:#40576b}.fields{display:grid;grid-template-columns:1fr 1fr;gap:23px;border-top:1px solid var(--line);margin-top:16px}.watch{border-left:2px solid var(--orange);padding-left:13px;margin-top:18px}.watch ul{padding-left:15px;margin:0}.watch li{font-size:11px;line-height:1.9;color:#40576b}.evidence{border-top:1px solid var(--line);padding-top:10px;margin-top:18px}.ev{padding:9px 0;border-bottom:1px solid #edf0f2}.ev:last-child{border:0}.ev a,.ev-title{font-size:11px;line-height:1.7;text-decoration:none;display:block}.ev a:hover{text-decoration:underline}.ev small{font-size:9px;color:var(--muted);display:block;margin-top:3px}.monitor{padding:19px;margin-bottom:12px}.monitor h3{font-size:13px;line-height:1.7}.monitor p{font-size:11px;line-height:1.9;color:#50677b;margin:9px 0}.subhead{font-size:12px;font-weight:700;margin-bottom:12px}.subhead span{font-size:10px;color:var(--muted);font-weight:400;margin-left:8px}.empty{padding:20px;border:1px dashed #bfccd6;border-radius:10px;font-size:12px;line-height:1.9;color:var(--muted);background:#fafbfb}.empty b{color:var(--ink)}details summary{font-size:10px;font-weight:600;padding:10px 0;cursor:pointer;line-height:1.7}details .body-copy{padding:10px 0}.method{margin-top:22px;padding:6px 20px}.footer{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);padding-top:19px;margin-top:24px;border-top:1px solid var(--line);gap:15px}.notice{font-size:10px;color:#98612c;line-height:1.8}.report-dialog{border:0;border-radius:14px;padding:0;width:min(960px,95vw);max-height:92vh;color:var(--ink);box-shadow:0 20px 100px #0004}.report-dialog::backdrop{background:#071b3280}.dialog-head{position:sticky;top:0;background:#f1f4f6;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);z-index:2}.dialog-head strong{font-size:12px}.dialog-actions{display:flex;gap:8px}.report-sheet{padding:30px;background:white}.report-brand{font-size:10px;letter-spacing:.12em;color:#a45212;border-bottom:2px solid var(--navy);padding-bottom:12px}.report-sheet h1{font-size:24px;color:var(--navy);margin:16px 0 8px}.report-meta{font-size:10px;color:var(--muted);margin-bottom:18px}.report-sheet h2{font-size:14px;margin:16px 0 9px}.report-row{padding:9px 0;border-bottom:1px solid var(--line);font-size:11px;line-height:1.65}.report-companies{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.report-company{padding:12px;background:#f3f6f8;border-radius:6px}.report-company h3{font-size:12px;margin-bottom:8px}.report-company p{font-size:10px;line-height:1.8}.report-sheet .fine{font-size:9px;color:var(--muted);line-height:1.7;margin-top:15px}.report-sheet a{font-size:9px}.report-sheet .summary{font-size:11px}
+@media(min-width:1500px){.shell{padding-left:42px;padding-right:42px}}@media(max-width:1000px){.hero{grid-template-columns:1fr 1fr}.hero-right{gap:15px;padding:20px}.radar{display:none}.main-grid{grid-template-columns:1.2fr 1fr}.tabs button{padding:7px 5px}.preview-head{align-items:flex-start;flex-direction:column}.detail-cols{grid-template-columns:1fr}}@media(max-width:720px){.shell{padding:0 16px 24px}.header{height:auto;min-height:95px;flex-wrap:wrap;padding:15px 0;gap:10px}.brand img{width:75px}.brand-text strong{font-size:11px}.header-right{justify-content:space-between;width:100%}.snapshot{text-align:left}.hero{grid-template-columns:1fr}.hero-copy{padding:25px}.hero h1{font-size:25px}.hero-right{justify-content:flex-start;padding:0 25px 24px}.hero-stats{grid-template-columns:repeat(4,1fr);width:100%;gap:10px}.hero-stats strong{font-size:19px}.process{align-items:flex-start;flex-direction:column;gap:4px}.main-grid,.company-grid{grid-template-columns:1fr}.trend{min-height:105px}.preview-head{flex-direction:row;align-items:center}.section-top h2 small{display:none}.company-card .summary{min-height:0}.detail-summary{grid-template-columns:1fr;gap:8px}.fields{grid-template-columns:1fr;gap:0}.detail-head{gap:15px}.detail-head h2{font-size:21px}.footer{flex-direction:column}.report-companies{grid-template-columns:1fr}.dialog-head{align-items:flex-start;gap:10px;flex-direction:column}.brief-top{flex-direction:column}.report-sheet{padding:18px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}@media print{:host{background:white;border:0}.shell{display:none}.report-dialog{display:block!important;position:static;max-height:none;width:100%;max-width:none;box-shadow:none;margin:0;border:0}.dialog-head{display:none}.report-sheet{padding:0}.report-sheet h1{font-size:22px}.report-companies{grid-template-columns:repeat(3,1fr)}.report-row,.report-company{break-inside:avoid}@page{size:A4;margin:14mm}}
+
+/* Embedded font: Pretendard v1.3.9
+Copyright (c) 2021, Kil Hyung-jin (https://github.com/orioncactus/pretendard),
+with Reserved Font Name Pretendard.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://scripts.sil.org/OFL
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded, 
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
+*/
+/* Revision 02: evidence access and clearer reading hierarchy. */
+
+:host{font-family:BriefingPretendard,"Malgun Gothic",Arial,sans-serif;--muted:#586d80}
+:host{font-weight:500}.brand-text strong{font-weight:800}.section-top h2{font-size:19px;font-weight:800}.company-top h3{font-size:15px;font-weight:750}.preview-name{font-size:22px;font-weight:800}.detail-head h2{font-weight:800}.brief-top h3{font-weight:750}.hero h1{font-weight:800}.trend-title{font-size:15px;font-weight:700}.trend-desc{font-size:12px;color:#586d80}.summary{font-size:13px;font-weight:500}.company-card .summary{font-size:12px;min-height:62px}.body-copy,.detail-summary p{font-size:13px;font-weight:500}.monitor h3{font-size:15px;font-weight:750}.monitor p,.watch li{font-size:12px}.label,.eyebrow{font-weight:700}.ev a,.ev-title{font-size:13px;font-weight:600}.ev small{font-size:11px}.section-top p,.section-top h2 small,.process,.text-link,.tabs button{font-size:11px}.preview-summary{margin-bottom:10px}.link-note{font-size:11px}.company-foot{font-size:11px}.tag{font-size:10px}.hero-copy p{font-size:13px}.hero-stats small{font-size:11px}
+.trend-row{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:14px;align-items:center;border-bottom:1px solid #e9edef}.trend-row:last-child{border-bottom:0}.trend{grid-template-columns:34px minmax(0,1fr);border:0;min-height:108px}.trend-evidence{border:1px solid #dce5ec;border-radius:8px;background:#f7f9fb;padding:10px 8px;text-align:left;color:var(--ink);font-size:11px;line-height:1.65;min-height:52px}.trend-evidence:hover{background:#eaf0f5;border-color:#8ea4b6}.trend-evidence strong{display:block;font-weight:750}.trend-evidence span{font-size:10px;color:#8e460f;font-weight:700}
+.evidence-dialog{position:fixed;inset:0 0 0 auto;margin:0;width:min(570px,100vw);max-width:100vw;height:100dvh;max-height:100dvh;border:0;border-left:1px solid var(--line);padding:0;color:var(--ink);background:#fff;box-shadow:-15px 0 60px #0b21382b}.evidence-dialog::backdrop{background:#0b21385c}.evidence-dialog .dialog-head{background:white;padding:20px 24px}.evidence-dialog .dialog-head strong{font-size:14px;font-weight:750}.evidence-content{padding:25px}.evidence-content h2{font-size:23px;font-weight:800;line-height:1.5;letter-spacing:-.6px;margin:9px 0 14px}.evidence-content .intro-copy{font-size:14px;line-height:1.85;color:#425b70}.evidence-stats{display:flex;gap:9px;margin:18px 0}.evidence-stats .tag{padding:5px 10px;font-size:12px}.evidence-list .ev{padding:18px 0}.evidence-list .ev a,.evidence-list .ev-title{font-size:15px;font-weight:700}.evidence-list .ev small{font-size:11px;margin-top:7px}.evidence-description{font-size:13px;line-height:1.8;color:#536b7e;margin-top:9px}.evidence-help{font-size:11px;line-height:1.8;color:var(--muted);margin-top:20px}.evidence-empty{padding:20px;background:#f3f6f8;font-size:13px;line-height:1.8;border-radius:8px}
+@media(max-width:720px){.trend-row{grid-template-columns:minmax(0,1fr) 88px;gap:8px}.trend-list{padding:0 14px}.trend{gap:8px;grid-template-columns:27px minmax(0,1fr)}.rank{width:26px}.trend-title{font-size:14px}.trend-desc{font-size:11px;-webkit-line-clamp:2}.trend-evidence{font-size:10px;padding:8px 5px}.company-card .summary{min-height:0}.preview-head{flex-wrap:wrap}.evidence-dialog{inset:12px;margin:0;width:calc(100vw - 24px);height:calc(100dvh - 24px);max-height:calc(100dvh - 24px);border-radius:13px}.evidence-content{padding:20px}.evidence-dialog .dialog-head{flex-direction:row;align-items:center;padding:15px 20px}.evidence-content h2{font-size:21px}}
+@media print{.evidence-dialog{display:none!important}}
+
+
+:host{display:block;min-width:0;background:var(--paper);font-family:BriefingPretendard,"Malgun Gothic",Arial,sans-serif}.shell{border-top:3px solid var(--orange)}
+
+.refresh-control{display:flex;align-items:center;gap:10px}.refresh-status{max-width:650px;font-size:11px;color:var(--muted);line-height:1.7}.refresh-status[data-outcome=partial],.refresh-status[data-outcome=failed]{color:#914d13}.refresh-control .button{min-height:34px;padding:7px 12px;white-space:nowrap}.is-refreshing{opacity:.75}.processing-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--orange);margin-right:5px}.overview-alert{padding:10px 15px;background:#fff3e7;border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:12px}.trend-why{border-left:2px solid var(--orange);padding-left:12px;margin:16px 0}.evidence-chart{display:flex;align-items:flex-end;height:45px;gap:5px;margin-top:12px}.evidence-chart span{background:#607f97;flex:1;min-width:0}.chart-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:5px}.print-help{font-size:11px;color:var(--muted);padding:0 20px 8px}.empty-trends{padding:24px}.company-grid.monitoring-grid{grid-template-columns:repeat(2,minmax(0,1fr))}@media(max-width:720px){.process{gap:10px}.refresh-control{width:100%;align-items:flex-start;flex-wrap:wrap}.refresh-status{max-width:100%}.company-grid.monitoring-grid{grid-template-columns:1fr}} 

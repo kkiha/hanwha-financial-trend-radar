@@ -1,0 +1,7 @@
+/* Host chrome only. Dashboard styles live in the isolated component. */
+[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"] {display:none!important}
+.stApp {background:#f3f5f6}
+.block-container {max-width:none!important;padding:0!important}
+[data-testid="stMainBlockContainer"] {max-width:none!important;padding:0!important}
+[data-testid="stVerticalBlock"] {gap:0}
+[data-testid="stIconMaterial"] {font-family:"Material Symbols Rounded"!important}

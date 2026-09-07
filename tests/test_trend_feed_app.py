@@ -1,149 +1,124 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 import json
 import os
-import re
+from pathlib import Path
 import tempfile
 import unittest
-from pathlib import Path
+from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
+from app.briefing_view import prepare_view, refresh_feedback, safe_url
 
-APP_PATH = str(Path(__file__).resolve().parents[1] / "app" / "trend_feed_app.py")
-
-
-def setUpModule() -> None:
-    """Pin the app to the bundled fallback.
-
-    Without this the suite reads whatever data/live holds, so a real refresh
-    would flip these DEMO assertions.
-    """
-    os.environ["GFR_LIVE_TRENDS_PATH"] = str(
-        Path(__file__).resolve().parent / "fixtures" / "no_such_live_file.json"
-    )
+ROOT=Path(__file__).resolve().parents[1]
+APP_PATH=str(ROOT / "app/trend_feed_app.py")
 
 
-def tearDownModule() -> None:
-    os.environ.pop("GFR_LIVE_TRENDS_PATH", None)
-
-
-def _run() -> AppTest:
+def _run():
     return AppTest.from_file(APP_PATH).run(timeout=30)
 
 
-def _rendered(app: AppTest) -> str:
-    body = "\n".join(item.value for item in app.markdown if "<style>" not in item.value)
-    return re.sub(r"data:image/[a-z+]+;base64,[A-Za-z0-9+/=]+", "data:image/<logo>", body)
+def _view(app):
+    return json.loads(app.get("bidi_component")[0].proto.json)
 
 
 class TrendFeedAppTest(unittest.TestCase):
-    def test_app_renders_without_exceptions(self) -> None:
-        app = _run()
-        self.assertEqual(len(app.exception), 0)
+    def setUp(self):
+        self.env=patch.dict(os.environ,{"GFR_LIVE_TRENDS_PATH":str(ROOT/"tests/fixtures/no_such_live_file.json")})
+        self.env.start()
+        self.addCleanup(self.env.stop)
 
-        rendered = _rendered(app)
-        self.assertIn("Hanwha Global Finance Radar", rendered)
-        self.assertIn("글로벌 금융 흐름을 압축하는 AI 트렌드 브리핑", rendered)
-        self.assertIn("최신 데이터 불러오기", [button.label for button in app.button])
+    def test_app_mounts_live_component_without_exceptions(self):
+        app=_run()
+        self.assertEqual(len(app.exception),0)
+        self.assertEqual(len(app.get("bidi_component")),1)
+        self.assertIn("최신 데이터 불러오기",app.get("bidi_component")[0].proto.html_content)
 
-    def test_summary_strip_reports_counts_from_the_payload(self) -> None:
-        rendered = _rendered(_run())
-        self.assertIn("최근 7일", rendered)
-        self.assertIn("수집 기사", rendered)
-        self.assertIn("고유 출처", rendered)
-        self.assertIn("Emerging Trends", rendered)
-        self.assertIn("18건", rendered)  # fallback article count
+    def test_summary_counts_come_from_loader(self):
+        view=_view(_run())
+        self.assertEqual(view["window_days"],7)
+        self.assertEqual(view["stats"]["article_count"],18)
+        self.assertEqual(len(view["trends"]),3)
+        self.assertEqual([t["rank"] for t in view["trends"]],[1,2,3])
 
-    def test_hero_and_two_cards_are_rendered_with_ranks(self) -> None:
-        rendered = _rendered(_run())
-        self.assertEqual(rendered.count('class="gf-hero"'), 1)
-        self.assertEqual(rendered.count('class="gf-card"'), 2)
-        for rank in ("01", "02", "03"):
-            self.assertIn(f'class="gf-rank">{rank}<', rendered)
+    def test_detail_metrics_and_all_articles_are_available(self):
+        view=_view(_run())
+        for trend in view["trends"]:
+            self.assertEqual(trend["article_count"],len(trend["articles"]))
+            self.assertIn("recent_48h_share",trend)
+            self.assertTrue(trend["daily_counts"])
+            self.assertTrue(trend["watch_next"])
+            self.assertTrue(trend["why_it_matters_ko"])
 
-    def test_every_trend_shows_computed_metrics_and_a_chart(self) -> None:
-        rendered = _rendered(_run())
-        self.assertEqual(rendered.count("48시간 집중도"), 3)
-        # Match the metric label markup: "관련 기사 타임라인" also uses the phrase.
-        self.assertEqual(rendered.count('class="gf-metric-label">관련 기사<'), 3)
-        self.assertGreaterEqual(rendered.count('class="gf-chart"'), 3)
+    def test_demo_does_not_invent_source_links(self):
+        view=_view(_run())
+        self.assertEqual(view["status"],"DEMO")
+        self.assertTrue(view["notice"])
+        self.assertTrue(all(not a["url"] for t in view["trends"] for a in t["articles"]))
 
-    def test_demo_status_and_synthetic_evidence_are_labelled(self) -> None:
-        rendered = _rendered(_run())
-        self.assertIn("gf-status--demo", rendered)
-        self.assertIn(">DEMO<", rendered)
-        # Fallback articles carry no URL, so they must be badged, not linked.
-        self.assertIn("합성", rendered)
-        self.assertNotIn("<a href=\"\"", rendered)
+    def test_live_cached_and_failed_refresh_are_independent(self):
+        fallback=json.loads((ROOT/"data/demo_outputs/trend_feed_fallback.json").read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/"latest_trends.json"
+            refresh={"attempted_at":datetime.now(timezone.utc).isoformat(),"outcome":"failed","message":"AI 분석 요청 실패"}
+            (path.parent/"latest_refresh.json").write_text(json.dumps(refresh),encoding="utf-8")
+            for age,status in [(0,"LIVE"),(48,"CACHED")]:
+                fallback.update(generated_at=(datetime.now(timezone.utc)-timedelta(hours=age)).isoformat(),is_synthetic=False,notice="")
+                path.write_text(json.dumps(fallback),encoding="utf-8")
+                with patch.dict(os.environ,{"GFR_LIVE_TRENDS_PATH":str(path)}):
+                    view=_view(_run())
+                self.assertEqual(view["status"],status)
+                self.assertEqual(view["refresh"]["outcome"],"failed")
+                self.assertEqual(view["refresh_message"],"AI 분석 요청 실패")
+                self.assertNotEqual(view["generated_at"],view["refresh"]["attempted_at"])
 
-    def test_detail_selector_and_methodology_are_present(self) -> None:
-        app = _run()
-        self.assertEqual(len(app.radio), 1)
-        self.assertEqual(len(app.radio[0].options), 3)
+    def test_view_is_a_copy_without_paths_or_diagnostics(self):
+        payload={"status":"LIVE","trends":[],"stats":{},"company_intelligence":{"companies":[]},"source_path":"private/path","refresh":{"technical_error":"private","outcome":"partial"}}
+        before=deepcopy(payload)
+        view=prepare_view(payload)
+        view["stats"]["article_count"]=999
+        self.assertEqual(payload,before)
+        self.assertNotIn("source_path",view)
+        self.assertNotIn("technical_error",view["refresh"])
 
-        rendered = _rendered(app)
-        self.assertIn("Trend Detail", rendered)
-        self.assertIn("관련 기사 타임라인", rendered)
-        self.assertIn("Watch Next", rendered)
-        self.assertIn("기사 본문은 크롤링하지 않습니다", rendered)
-        self.assertIn("투자 추천", rendered)
+    def test_unsafe_urls_are_removed_in_trends_and_company_evidence(self):
+        for url in ["javascript:alert(1)","data:text/html,x","//example.com","https://", "https://[bad"]:
+            self.assertEqual(safe_url(url),"")
+        self.assertEqual(safe_url("https://example.com/news?a=1&b=2"),"https://example.com/news?a=1&b=2")
+        view=prepare_view({"trends":[{"articles":[{"url":"javascript:alert(1)"}]}],"company_intelligence":{"companies":[{"status":"AVAILABLE","briefs":[{"evidence_articles":[{"url":"data:text/html,x"}]}]}]}})
+        self.assertEqual(view["trends"][0]["articles"][0]["url"],"")
+        self.assertEqual(view["company_intelligence"]["companies"][0]["briefs"][0]["evidence_articles"][0]["url"],"")
 
-    def test_switching_trend_detail_changes_the_timeline(self) -> None:
-        app = _run()
-        first = _rendered(app)
-        app.radio[0].set_value(app.radio[0].options[1]).run(timeout=30)
-        self.assertEqual(len(app.exception), 0)
-        self.assertNotEqual(first, _rendered(app))
+    def test_partial_success_explains_failed_company_even_with_new_trends(self):
+        feedback=refresh_feedback({"clustered":True,"trends":3,"outcome":"partial","error":"회사 분석 일부 실패","relevance_calls":{"hanwha_asset_management":{"status":"failed"}}})
+        self.assertEqual(feedback["outcome"],"partial")
+        self.assertIn("트렌드 3건 갱신",feedback["message"])
+        self.assertIn("회사 분석 일부 실패",feedback["message"])
+        self.assertIn("한화자산운용",feedback["message"])
 
-    def test_icon_font_and_header_chrome_are_handled(self) -> None:
-        app = _run()
-        style = next(item.value for item in app.markdown if "<style>" in item.value)
-        self.assertNotIn('[class*="st-"]', style)
-        self.assertIn('"Material Symbols Rounded" !important', style)
-        self.assertIn('[data-testid="stHeader"]', style)
+    def test_refresh_callback_reports_exception_and_keeps_loaded_trends(self):
+        from app.trend_feed_app import _refresh_now
+        state={}
+        with patch("app.trend_feed_app.st.session_state",state),patch("scripts.refresh_trend_feed.refresh",side_effect=RuntimeError("error")) as refresh:
+            _refresh_now()
+        self.assertEqual(refresh.call_count,1)
+        self.assertEqual(state["gf_feedback"]["outcome"],"failed")
+        self.assertIn("기존 결과를 유지",state["gf_feedback"]["message"])
 
-    def test_header_separates_displayed_data_from_latest_failed_attempt(self) -> None:
-        fallback_path = (
-            Path(__file__).resolve().parents[1]
-            / "data"
-            / "demo_outputs"
-            / "trend_feed_fallback.json"
-        )
-        live = json.loads(fallback_path.read_text(encoding="utf-8"))
-        now = datetime.now(timezone.utc).isoformat()
-        live.update(generated_at=now, is_synthetic=False, notice="")
+    def test_refresh_callback_success_and_partial(self):
+        from app.trend_feed_app import _refresh_now
+        for outcome in ["success","partial"]:
+            state={}
+            with patch("app.trend_feed_app.st.session_state",state),patch("scripts.refresh_trend_feed.refresh",return_value={"clustered":True,"trends":3,"outcome":outcome,"error":"후속 단계 미완료"}):
+                _refresh_now()
+            self.assertEqual(state["gf_feedback"]["outcome"],outcome)
+            self.assertIn("트렌드 3건",state["gf_feedback"]["message"])
 
-        previous = os.environ.get("GFR_LIVE_TRENDS_PATH")
-        try:
-            with tempfile.TemporaryDirectory() as tmp:
-                live_path = Path(tmp) / "latest_trends.json"
-                live_path.write_text(json.dumps(live, ensure_ascii=False), encoding="utf-8")
-                (Path(tmp) / "latest_refresh.json").write_text(
-                    json.dumps(
-                        {
-                            "attempted_at": now,
-                            "outcome": "failed",
-                            "message": "AI 분석 요청 실패",
-                        },
-                        ensure_ascii=False,
-                    ),
-                    encoding="utf-8",
-                )
-                os.environ["GFR_LIVE_TRENDS_PATH"] = str(live_path)
-                app = _run()
-                rendered = _rendered(app)
-                captions = "\n".join(item.value for item in app.caption)
-        finally:
-            if previous is None:
-                os.environ.pop("GFR_LIVE_TRENDS_PATH", None)
-            else:
-                os.environ["GFR_LIVE_TRENDS_PATH"] = previous
-
-        self.assertIn("표시 데이터", rendered)
-        self.assertIn("최근 시도", rendered)
-        self.assertIn("실패", rendered)
-        self.assertIn("AI 분석 요청 실패", captions)
+    def test_all_company_failure_without_cluster_retains_previous_result_message(self):
+        feedback=refresh_feedback({"clustered":False,"outcome":"failed","error":"수집 실패"})
+        self.assertIn("기존 결과를 유지",feedback["message"])
 
 
 if __name__ == "__main__":

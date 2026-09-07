@@ -11,4 +11,4 @@ protobuf
 groq>=1.7.0,<2
 python-dotenv>=1.0
 requests>=2.31
-streamlit>=1.38
+streamlit>=1.63,<2
