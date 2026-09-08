@@ -285,7 +285,9 @@ class RefreshSuccessTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with _patch_collect(articles, _debug()), mock.patch.dict(
                 os.environ, {"OPENAI_API_KEY": "test-key"}, clear=False
-            ), mock.patch.object(refresh_trend_feed, "cluster_trends", fake_cluster):
+            ), mock.patch.object(refresh_trend_feed, "cluster_trends", fake_cluster), mock.patch.object(
+                refresh_trend_feed, "runtime_setting", return_value=""
+            ):
                 refresh(live_dir=Path(tmp), skip_relevance=True)
 
         self.assertEqual(seen["ids"], [item["article_id"] for item in articles])
@@ -327,7 +329,9 @@ class RefreshSuccessTest(unittest.TestCase):
             config_path.write_text(json.dumps(config), encoding="utf-8")
             with _patch_collect(articles, _debug()), mock.patch.dict(
                 os.environ, {"OPENAI_API_KEY": "test-key"}, clear=False
-            ), mock.patch.object(refresh_trend_feed, "cluster_trends", fake_cluster):
+            ), mock.patch.object(refresh_trend_feed, "cluster_trends", fake_cluster), mock.patch.object(
+                refresh_trend_feed, "runtime_setting", return_value=""
+            ):
                 refresh(
                     live_dir=Path(tmp),
                     config_path=config_path,

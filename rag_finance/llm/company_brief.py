@@ -17,7 +17,7 @@ from rag_finance.llm.grounding import (
 )
 
 from rag_finance.llm.openai_runtime import (
-    create_client, resolve_api_key, completion_options, api_error_message,
+    create_client, resolve_api_key, completion_options, api_error_message, complete,
     is_permanent_api_error,
 )
 
@@ -972,7 +972,7 @@ def generate_company_briefs(
                           messages=messages, response_format=build_brief_response_format(scope))
             if reasoning_effort:
                 kwargs["reasoning_effort"] = reasoning_effort
-            response = client.chat.completions.create(**kwargs)
+            response = complete(client, stage="briefs", **kwargs)
             choices = _attribute(response, "choices", []) or []
             choice = choices[0] if choices else None
             finish = _attribute(choice, "finish_reason", "") or ""

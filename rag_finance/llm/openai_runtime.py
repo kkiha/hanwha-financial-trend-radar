@@ -2,10 +2,64 @@
 from __future__ import annotations
 
 import os
+import time
+from contextvars import ContextVar
+from functools import wraps
 from typing import Any
 
 DEFAULT_MODEL = "gpt-5.4-mini"
 DEFAULT_REASONING_EFFORT = "none"
+_calls = ContextVar("llm_calls", default=None)
+
+
+def runtime_setting(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    if value:
+        return value
+    try:
+        import streamlit as st
+        if st.runtime.exists():
+            return str(st.secrets.get(name, "")).strip()
+    except (ImportError, FileNotFoundError, KeyError):
+        pass
+    return ""
+
+
+def isolated_run(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        token = _calls.set([])
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            _calls.reset(token)
+    return wrapped
+
+
+def run_calls():
+    return list(_calls.get() or [])
+
+
+def complete(client, *, stage, **kwargs):
+    started = time.monotonic()
+    record = {"stage": stage, "model": kwargs["model"],
+              "reasoning_effort": kwargs.get("reasoning_effort"),
+              "max_completion_tokens": kwargs["max_completion_tokens"]}
+    try:
+        response = client.chat.completions.create(**kwargs)
+        usage = getattr(response, "usage", None)
+        record["usage"] = {k: getattr(usage, k) for k in
+            ("prompt_tokens", "completion_tokens", "total_tokens")
+            if isinstance(getattr(usage, k, None), int)}
+        record["outcome"] = "response_received"
+        return response
+    except Exception as exc:
+        record.update(outcome="api_error", error_type=type(exc).__name__)
+        raise
+    finally:
+        record["elapsed_seconds"] = round(time.monotonic() - started, 3)
+        if _calls.get() is not None:
+            _calls.get().append(record)
 
 
 def resolve_api_key(api_key: str | None = None) -> str:

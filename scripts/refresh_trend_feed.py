@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from rag_finance.llm.openai_runtime import resolve_api_key
+from rag_finance.llm.openai_runtime import resolve_api_key, runtime_setting, isolated_run, run_calls
 
 from app.trend_feed_data import (
     LIVE_DIR,
@@ -131,9 +131,9 @@ def _load_llm_settings(config_path: str | Path = DEFAULT_CONFIG_PATH) -> dict[st
         config = json.loads(Path(config_path).read_text(encoding="utf-8"))
         llm = config.get("llm", {})
         if not isinstance(llm, Mapping):
-            return defaults
+            llm = {}
     except (OSError, ValueError, AttributeError):
-        return defaults
+        llm = {}
 
     settings = dict(defaults)
     if isinstance(llm.get("model"), str) and llm["model"].strip():
@@ -161,6 +161,18 @@ def _load_llm_settings(config_path: str | Path = DEFAULT_CONFIG_PATH) -> dict[st
     delay = llm.get("retry_base_delay_seconds")
     if isinstance(delay, (int, float)) and not isinstance(delay, bool) and delay >= 0:
         settings["retry_base_delay_seconds"] = float(delay)
+    return settings
+
+
+def _effective_llm_settings(config_path, model=None):
+    settings = _load_llm_settings(config_path)
+    settings["model"] = (model or runtime_setting("OPENAI_MODEL") or settings["model"]).strip()
+    effort = runtime_setting("OPENAI_REASONING_EFFORT")
+    if effort:
+        if effort not in {"none", "low", "medium", "high", "xhigh"}:
+            raise ValueError("OPENAI_REASONING_EFFORT must be none, low, medium, high or xhigh")
+        settings["reasoning_effort"] = effort
+        settings["relevance_reasoning_effort"] = effort
     return settings
 
 
@@ -209,6 +221,9 @@ def _finish_refresh(
         "model": report.get("model"),
         "llm_diagnostics": report.get("llm_diagnostics", {}),
     }
+    report["api_calls"] = run_calls()
+    status["api_calls"] = report["api_calls"]
+    status["llm_settings"] = report.get("llm_settings", {})
     target = save_refresh_status(status, live_dir=live_dir)
     report["refresh_status_path"] = str(target)
     return report
@@ -252,6 +267,7 @@ def collection_summary(debug: dict) -> str:
     return "\n".join(lines)
 
 
+@isolated_run
 def refresh(
     *,
     window_days: int = WINDOW_DAYS,
@@ -320,9 +336,13 @@ def refresh(
         report.update(outcome="partial", stage="llm", error_code="missing_api_key")
         return _finish_refresh(report, live_dir=Path(live_dir), attempted_at=attempted_at)
 
-    llm = _load_llm_settings(config_path)
-    if model:
-        llm["model"] = model
+    try:
+        llm = _effective_llm_settings(config_path, model)
+    except ValueError:
+        report.update(outcome="failed", stage="configuration", error_code="invalid_llm_settings",
+                      error="OPENAI_REASONING_EFFORT 설정을 확인하세요: none, low, medium, high, xhigh")
+        return _finish_refresh(report, live_dir=Path(live_dir), attempted_at=attempted_at)
+    report["llm_settings"] = dict(llm)
     report["model"] = llm["model"]
 
     try:

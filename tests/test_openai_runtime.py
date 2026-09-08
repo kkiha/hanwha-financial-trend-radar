@@ -27,6 +27,35 @@ from tests.test_company_brief import (
 
 
 class OpenAIRuntimeTest(unittest.TestCase):
+    def test_environment_model_and_reasoning_override_and_cli_priority(self):
+        from scripts.refresh_trend_feed import _effective_llm_settings
+        with patch.dict(os.environ, {'OPENAI_MODEL': 'gpt-5.5', 'OPENAI_REASONING_EFFORT': 'low'}):
+            settings = _effective_llm_settings('missing-config.json')
+            self.assertEqual(settings['model'], 'gpt-5.5')
+            self.assertEqual(settings['reasoning_effort'], 'low')
+            self.assertEqual(settings['relevance_reasoning_effort'], 'low')
+            self.assertEqual(_effective_llm_settings('missing-config.json', 'gpt-5.4-mini')['model'], 'gpt-5.4-mini')
+        with patch.dict(os.environ, {'OPENAI_REASONING_EFFORT': 'invalid'}):
+            with self.assertRaises(ValueError):
+                _effective_llm_settings('missing-config.json')
+
+    def test_call_records_are_isolated_and_include_usage(self):
+        from rag_finance.llm.openai_runtime import complete, isolated_run, run_calls
+        from types import SimpleNamespace
+        response = SimpleNamespace(usage=SimpleNamespace(prompt_tokens=10, completion_tokens=5, total_tokens=15))
+        client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **kw: response)))
+        @isolated_run
+        def run():
+            self.assertEqual(run_calls(), [])
+            complete(client, stage='briefs', model='gpt-5.5', reasoning_effort='none', max_completion_tokens=4000)
+            return run_calls()
+        for _ in range(2):
+            records = run()
+            self.assertEqual(len(records), 1)
+            self.assertEqual(records[0]['usage']['total_tokens'], 15)
+            self.assertGreaterEqual(records[0]['elapsed_seconds'], 0)
+        self.assertEqual(run_calls(), [])
+
     def client(self, handler):
         client = OpenAI(api_key="test-key", max_retries=0,
                         http_client=httpx.Client(transport=httpx.MockTransport(handler)))

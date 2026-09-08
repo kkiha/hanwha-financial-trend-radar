@@ -13,7 +13,7 @@ import time
 from typing import Any, Mapping, Sequence
 
 from rag_finance.llm.openai_runtime import (
-    create_client, resolve_api_key, completion_options, api_error_message,
+    create_client, resolve_api_key, completion_options, api_error_message, complete,
     is_permanent_api_error, DEFAULT_MODEL, DEFAULT_REASONING_EFFORT,
 )
 
@@ -397,7 +397,7 @@ def cluster_trends(
 
         attempt_info: dict[str, Any] = {"attempt": attempt}
         try:
-            response = client.chat.completions.create(**attempt_request)
+            response = complete(client, stage="trends", **attempt_request)
         except Exception as exc:  # SDK exception types vary by installed version.
             status = _status_code(exc)
             attempt_info.update(

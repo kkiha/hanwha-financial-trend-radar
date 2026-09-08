@@ -19,7 +19,7 @@ from rag_finance.llm.grounding import (
 )
 
 from rag_finance.llm.openai_runtime import (
-    create_client, resolve_api_key, completion_options, api_error_message,
+    create_client, resolve_api_key, completion_options, api_error_message, complete,
     is_permanent_api_error, DEFAULT_MODEL, DEFAULT_REASONING_EFFORT,
 )
 
@@ -770,7 +770,7 @@ def classify_company_relevance(
                     }
                 )
             try:
-                response = client.chat.completions.create(**attempt_request)
+                response = complete(client, stage="relevance", **attempt_request)
                 choices = _attribute(response, "choices", []) or []
                 choice = choices[0] if choices else None
                 finish_reason = _attribute(choice, "finish_reason", "") or ""
